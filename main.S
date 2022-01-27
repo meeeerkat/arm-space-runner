@@ -42,13 +42,17 @@
 
 .text
 
-    .macro PRINT_BUFFER, lab:req
-    /* write syscall */
+    .macro PRINT
+    /* write syscall, r1 and r2 are positionned properly*/
     mov r0, #1     /* stdout */
-    ldr r1, =\lab /* buffer */
-    ldr r2, =\lab\()_len   /* len */
     mov r7, #4     /* Syscall ID. */
     swi #0
+    .endm
+
+    .macro PRINT_BUFFER, lab:req
+    ldr r1, =\lab /* buffer */
+    ldr r2, =\lab\()_len   /* len */
+    PRINT
     .endm
 
     .macro WRITE_CHAR, buff_addr:req, char:req, posy:req, posx:req, tmp:req
@@ -58,6 +62,24 @@
     str \char, [\buff_addr, \tmp]
     .endm
 
+    .macro CLEAR_SCREEN_BUFFER, lab:req, tmp_char:req, tmp_buff_addr:req, tmp_buff_end:req
+    mov \tmp_char, #0x20 // space
+    ldr \tmp_buff_addr, =\lab
+    ldr \tmp_buff_end, =\lab\()_len
+    add \tmp_buff_end, \tmp_buff_end, \tmp_buff_addr
+    clear_buffer_set_spaces_while_start:
+        strb \tmp_char, [\tmp_buff_addr], #1
+        CMP \tmp_buff_addr, \tmp_buff_end
+        BNE clear_buffer_set_spaces_while_start
+    mov \tmp_char, #0xa // adding EOL every 80 chars
+    ldr \tmp_buff_addr, =\lab+79
+    clear_buffer_add_end_of_line_while_start:
+        strb \tmp_char, [\tmp_buff_addr], #80
+        CMP \tmp_buff_addr, \tmp_buff_end
+        BLT clear_buffer_add_end_of_line_while_start
+    .endm
+
+
 .global _start
 _start:
     PRINT_BUFFER startup_codes
@@ -65,9 +87,10 @@ _start:
 
     ldr r0, =screen
     mov r1, #0x30
-    mov r2, #22
-    mov r3, #2
+    mov r2, #0
+    mov r3, #0
     WRITE_CHAR r0, r1, r2, r3, r4
+    CLEAR_SCREEN_BUFFER screen, r0, r1, r2
     PRINT_BUFFER screen
 
     PRINT_BUFFER cleanup_codes
