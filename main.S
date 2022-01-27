@@ -39,6 +39,7 @@
                                                                                
                                                                                
                                                                                "
+    screen_end:
     screen_len = . - screen
 
     .align 4
@@ -48,7 +49,7 @@
 
 .text
 
-    .macro PRINT
+.macro PRINT
     /* write syscall
     * assumes that r1 and r2 are positionned properly*/
     push {r7}
@@ -56,18 +57,18 @@
     mov r7, #4     // syscall ID
     swi #0
     pop {r7}
-    .endm
+.endm
 
-    .macro PRINT_BUFFER, lab:req
+.macro PRINT_BUFFER, lab:req
     ldr r1, =\lab           // buffer
     ldr r2, =\lab\()_len    // len
     PRINT
-    .endm
+.endm
 
-    .macro UPDATE_GRAPHICS
+.macro UPDATE_GRAPHICS
     PRINT_BUFFER reset_graphics_codes
     PRINT_BUFFER screen
-    .endm
+.endm
 
 write_char_to_buffer:
     // r0 = buffer, r1 = char, r2 = posy, r3 = posx
@@ -84,8 +85,7 @@ write_char_to_buffer:
 clear_screen_buffer:
     // Takes no arguments
     ldr r0, =screen
-    ldr r1, =screen_len
-    add r1, r1, r0
+    ldr r1, =screen_end
     mov r2, #0x20 // space
     clear_buffer_set_spaces_while_start:
         strb r2, [r0], #1
@@ -117,8 +117,13 @@ sleep_till_next_frame:
 // SPECIFIC FUNCTIONS START
 .data
 // lazers {char, posy, vely, posx, velx}
-lazers: .byte 0x41, 20, -1, 0, 1, 0x42, 0, 1, 70, -1, 0x43, 0, 1, 30, 1
+lazers: .skip 100
+lazers_end:
+//0x41, 20, -1, 0, 1, 0x42, 0, 1, 70, -1, 0x43, 0, 1, 30, 1
 lazers_len = . - lazers
+next_lazer_addr: .word lazers   // Rotating addr
+random_bytes: .skip 2
+random_bytes_len = . - random_bytes
 
 .text
 update_lazers:
@@ -129,8 +134,7 @@ update_lazers:
 
     ldr r0, =screen
     ldr r4, =lazers
-    ldr r5, =lazers_len
-    add r5, r5, r4
+    ldr r5, =next_lazer_addr
 update_one_lazer:
     // Here we update all components of all lazers
     ldrb r1, [r4], #1   // loading char
@@ -164,8 +168,62 @@ update_next_lazer:
     cmp r4, r5
     bne update_one_lazer
     pop {r4, r5, pc}
+
+
+add_random_lazer:
+    // Takes no arguments
+    push {r4, r5, r6, r7}
+
+    ldr r3, =next_lazer_addr
+    ldr r3, [r3]
+
+    mov r5, #0x41
+    strb r5, [r3], #1
+
+    // Starting position calculation:
+    // We need 2 random bits (4 combinations) to determine the side on which the lazers will spawn
+    // We need 5 or 7 random bits (32 or 128 combinations) for the other component (the first 2 random bits
+    // determine a component to be 0)
+    // We then need to set the velocity (for now it'll be calculated based on starting position)
+    // RIGHT NOW THE LAZERS WILL ONLY SPAWN FROM THE TOP OR BOTTOM (to simplify)
+
+    ldr r0, =random_bytes
+    ldr r1, =random_bytes_len
+    mov r2, #0
+    mov r7, #0x180     // syscall ID
+    swi #0
     
+    ldrb r5, [r0], #1
+    TST r5, #0b1
+    // r5 = startpos.y, r6 = velocity.y
+    moveq r5, #0
+    moveq r6, #1
+    movne r5, #24
+    ldrne r6, =-1
+    strb r5, [r3], #1
+    strb r6, [r3], #1
+
+    // loading the next random byte
+    ldrb r5, [r0], #1
+    mov r5, r5, LSR #2      // only using 6 bits so we only have 2^6=64 combinations
+    add r5, r5, #(80-64)/2  // centering startpos.x
+    strb r5, [r3], #1
+    TST r5, #0b10000000      // Using the eigth random bit to determine velocity.x
+    moveq r5, #1
+    ldrne r5, =-1
+    strb r5, [r3], #1
     
+    ldr r4, =lazers_end
+    cmp r3, r4          // if next_lazer_addr is at the end of the lazers array
+    ldreq r3, =lazers   // move it back to the beginning
+    // Storing new next address
+    ldr r4, =next_lazer_addr
+    str r3, [r4]
+
+    pop {r4, r5, r6, r7}
+    mov pc, lr
+
+
 // SPECIFIC FUNCTIONS END
 
 
@@ -179,6 +237,7 @@ _start:
     mov r4, #100
     ldr r5, =screen
 main_while_start:
+    bl add_random_lazer
     bl update_lazers
     UPDATE_GRAPHICS
     bl clear_screen_buffer
