@@ -116,40 +116,40 @@ sleep_till_next_frame:
 
 // SPECIFIC FUNCTIONS START
 .data
-// lazers {char, posy, vely, posx, velx}
-lazers: .skip 1000
-lazers_end:
+// lasers {char, posy, vely, posx, velx}
+lasers: .skip 1000
+lasers_end:
 //0x41, 20, -1, 0, 1, 0x42, 0, 1, 70, -1, 0x43, 0, 1, 30, 1
-lazers_len = . - lazers
-next_lazer_addr: .word lazers   // Rotating addr
+lasers_len = . - lasers
+next_laser_addr: .word lasers   // Rotating addr
 random_bytes: .skip 4
 random_bytes_len = . - random_bytes
 
 .text
-update_lazers:
+update_lasers:
     // Takes no argument
-    // Assumes that buffer has been cleared from previous lazers
-    // Updates lazers position and writes them to screen buffer
+    // Assumes that buffer has been cleared from previous lasers
+    // Updates lasers position and writes them to screen buffer
     push {r4, r5, lr}
 
     ldr r0, =screen
-    ldr r4, =lazers
-    ldr r5, =next_lazer_addr
-update_one_lazer:
-    // Here we update all components of all lazers
+    ldr r4, =lasers
+    ldr r5, =next_laser_addr
+update_one_laser:
+    // Here we update all components of all lasers
     ldrb r1, [r4], #1   // loading char
     ldrb r2, [r4], #2   // loading posy
     ldrb r3, [r4], #2   // loading posx
     
     cmp r2, #25          // verifying value
-    bge update_next_lazer
+    bge update_next_laser
     cmp r2, #0
-    blt update_next_lazer
+    blt update_next_laser
 
     cmp r3, #80          // verifying value
-    bge update_next_lazer
+    bge update_next_laser
     cmp r3, #0
-    blt update_next_lazer
+    blt update_next_laser
 
     // r0,r1,r2 and r3 are all already properly positionned
     // We are assured that write_char_to_buffer doesn't modify it's parameter
@@ -164,17 +164,17 @@ update_one_lazer:
     ldrb r1, [r4, #-1]  // loading velx
     add r3, r3, r1      // calculating new posx
     strb r3, [r4, #-2]  // storing it
-update_next_lazer:
+update_next_laser:
     cmp r4, r5
-    bne update_one_lazer
+    bne update_one_laser
     pop {r4, r5, pc}
 
 
-add_random_lazer:
+add_random_laser:
     // Takes no arguments
     push {r4, r5, r6, r7}
 
-    ldr r3, =next_lazer_addr
+    ldr r3, =next_laser_addr
     ldr r3, [r3]
     add r3, r3, #10
 
@@ -182,11 +182,11 @@ add_random_lazer:
     strb r5, [r3], #1
 
     // Starting position calculation:
-    // We need 2 random bits (4 combinations) to determine the side on which the lazers will spawn
+    // We need 2 random bits (4 combinations) to determine the side on which the lasers will spawn
     // We need 5 or 7 random bits (32 or 128 combinations) for the other component (the first 2 random bits
     // determine a component to be 0)
     // We then need to set the velocity (for now it'll be calculated based on starting position)
-    // RIGHT NOW THE LAZERS WILL ONLY SPAWN FROM THE TOP OR BOTTOM (to simplify)
+    // RIGHT NOW THE laserS WILL ONLY SPAWN FROM THE TOP OR BOTTOM (to simplify)
 
     ldr r0, =random_bytes
     ldr r1, =random_bytes_len
@@ -230,11 +230,11 @@ add_random_lazer:
     ldrne r5, =-1
     strb r5, [r3], #1
     
-    ldr r4, =lazers_end
-    cmp r3, r4          // if next_lazer_addr is at the end of the lazers array
-    ldrge r3, =lazers   // move it back to the beginning (r3 = r4+1 because we post index it)
+    ldr r4, =lasers_end
+    cmp r3, r4          // if next_laser_addr is at the end of the lasers array
+    ldrge r3, =lasers   // move it back to the beginning (r3 = r4+1 because we post index it)
     // Storing new next address
-    ldr r4, =next_lazer_addr
+    ldr r4, =next_laser_addr
     str r3, [r4]
 
     pop {r4, r5, r6, r7}
@@ -254,8 +254,8 @@ _start:
     mov r4, #100
     ldr r5, =screen
 main_while_start:
-    bl add_random_lazer
-    bl update_lazers
+    bl add_random_laser
+    bl update_lasers
     UPDATE_GRAPHICS
     bl clear_screen_buffer
     bl sleep_till_next_frame
