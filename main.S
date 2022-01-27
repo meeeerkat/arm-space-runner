@@ -12,40 +12,30 @@
     cleanup_codes_len = . - cleanup_codes
     reset_graphics_codes: .ascii "\x1b[2J\x1b[H"
     reset_graphics_codes_len = . - reset_graphics_codes
+    go_home_code: .ascii "\x1b[H"
+    go_home_code_len = . - go_home_code
 
-    screen: .ascii "                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               "
+    screen: .skip 80*25
     screen_end:
     screen_len = . - screen
 
-    .align 4
+
+    // struct termios declared in /usr/arm-linux-gnueabihf/usr/include/asm-generic/termbits.h
+    my_termios_struct:
+        .skip 4*4 + 1 + 19
+
+    saved_termios_struct:
+        .skip 4*4 + 1 + 19
+
+    winsize_struct:
+        .short 25
+        .short 80
+        .short 0     // unused
+        .short 0     // unused
+
     sleep_till_next_frame_timespec_struct:
         .long 0 // seconds
-        .long 50000000 // nanoseconds
+        .long 500000000 // nanoseconds
 
 .text
 
@@ -66,7 +56,7 @@
 .endm
 
 .macro UPDATE_GRAPHICS
-    PRINT_BUFFER reset_graphics_codes
+    PRINT_BUFFER go_home_code
     PRINT_BUFFER screen
 .endm
 
@@ -92,7 +82,7 @@ clear_screen_buffer:
         CMP r0, r1
         BNE clear_buffer_set_spaces_while_start
     mov r2, #0xa // adding EOL every 80 chars
-    ldr r0, =screen+79
+    ldr r0, =screen+80
     clear_buffer_add_end_of_line_while_start:
         strb r2, [r0], #80
         cmp r0, r1
@@ -109,6 +99,80 @@ sleep_till_next_frame:
     swi #0
     pop {r7}
     mov pc, lr
+
+
+
+/* ioctl syscall (with stdin so no need to do an open syscall)
+     * see man tty_ioctl
+     * It's pretty hard to find good information on how to use this
+     * strace to check system calls of a ncurses program revealed the
+     * reapeted use of the following calls
+     * ioctl(1, TCGETS, {B38400 opost isig icanon echo ...}) = 0
+     * ioctl(1, TIOCGWINSZ, {ws_row=47, ws_col=151, ws_xpixel=1359, ws_ypixel=705}) = 0
+     * ioctl(1, SNDCTL_TMR_STOP or TCSETSW, {B38400 opost isig -icanon echo ...}) = 0
+     * ioctl(1, SNDCTL_TMR_STOP or TCSETSW, {B38400 opost isig -icanon -echo ...}) = 0
+     * The 2 last ones where called only once and after that strace prints weirdly
+     * which leds to believe that these last two are what launch the canonical mode
+     * The value of constants like TCGETS or structs like termios was found in the includes files in
+     * /usr/arm-linux-gnueabihf/usr/include/asm-generic/ such as ioctls.h, termios.h
+     * Using grep to find the file defining the required symbol (like B38400 or TCGETS) is practical
+     * */
+
+.macro NONCANONICAL_MODE_START
+    push {r7}
+
+/*
+    // Saving old termios struct
+    mov r0, #1      // stdin
+    mov r1, #0x5401 // TCGETS
+    ldr r2, =saved_termios_struct
+    mov r7, #0x36   // syscall ID
+    swi #0
+*/
+    // Getting old termios struct again to modify it
+    // TODO: copy saved_termios_struct instead of making another syscall
+    mov r0, #1      // stdin
+    mov r1, #0x5401 // TCGETS
+    ldr r2, =my_termios_struct
+    mov r7, #0x36   // syscall ID
+    swi #0
+    
+    ldr r2, =my_termios_struct
+    ldr r3, [r2, #12]
+    mov r4, #0
+    orr r4, r4, #2
+    orr r4, r4, #10
+    mvn r4, r4
+    and r3, r3, r4 // clear ICANON (=2) and ECHO (=10=8+2)
+    str r3, [r2, #12]
+
+    // Setting modified termios struct
+    mov r0, #1
+    mov r1, #0x5402 // TCSETS
+    ldr r2, =my_termios_struct
+    mov r7, #0x36   // syscall ID
+    swi #0
+
+/*
+    // Setting window size
+    mov r1, #0x5414 // TIOCSWINSZ
+    ldr r2, =winsize_struct
+    swi #0
+*/
+    pop {r7}
+.endm
+
+.macro NONCANONICAL_MODE_END
+    push {r7}
+    // Resetting saved termios struct
+    mov r0, #1      // stdin
+    mov r1, #0x5406 // TCSETSA
+    ldr r2, =saved_termios_struct
+    mov r7, #0x36   // syscall ID
+    swi #0
+    pop {r7}
+.endm
+
 
 // GENERAL FUNCTIONS END
 
@@ -235,9 +299,12 @@ add_random_laser:
 .global _start
 _start:
     PRINT_BUFFER startup_codes
-    UPDATE_GRAPHICS
+    PRINT_BUFFER reset_graphics_codes
+    NONCANONICAL_MODE_START
 
-    mov r4, #100
+    bl clear_screen_buffer
+
+    mov r4, #10
     ldr r5, =screen
 main_while_start:
     bl add_random_laser
@@ -248,9 +315,10 @@ main_while_start:
     cmp r4, #0
     sub r4, r4, #1
     bgt main_while_start
-
+    
+    NONCANONICAL_MODE_END
+    
     PRINT_BUFFER cleanup_codes
-
     /* exit syscall */
     mov r0, #0 // status
     mov r7, #1 // syscall ID
