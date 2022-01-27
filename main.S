@@ -41,24 +41,28 @@
     screen_len = . - screen
 
     .align 4
-    sleep_timespec_struct:
-        .long 1 // 1 second
-        .long 0 // 0 nanoseconds
+    sleep_till_next_frame_timespec_struct:
+        .long 0 // 1 second
+        .long 30000000 // 0 nanoseconds
 
 .text
 
     .macro PRINT
     /* write syscall
     * assumes that r1 and r2 are positionned properly*/
+    push {r7}
     mov r0, #1     // stdout
     mov r7, #4     // syscall ID
     swi #0
+    pop {r7}
     .endm
 
     .macro PRINT_BUFFER, lab:req
+    push {r2}
     ldr r1, =\lab           // buffer
     ldr r2, =\lab\()_len    // len
     PRINT
+    pop {r2}
     .endm
 
     .macro UPDATE_GRAPHICS
@@ -66,52 +70,62 @@
     PRINT_BUFFER screen
     .endm
 
-    .macro WRITE_CHAR, buff_addr:req, char:req, posy:req, posx:req, tmp:req
-    mov \tmp, #80
-    mul \tmp, \posy, \tmp
-    add \tmp, \tmp, \posx
-    str \char, [\buff_addr, \tmp]
-    .endm
+write_char_to_buffer:
+    // r2 = buffer, r4 = char, r5 = posy, r6 = posx
+    mov r0, #80
+    mul r0, r5, r0
+    add r0, r0, r6
+    str r4, [r2, r0]
+    mov pc, lr
+    
 
-    .macro CLEAR_SCREEN_BUFFER, lab:req, tmp_char:req, tmp_buff_addr:req, tmp_buff_end:req
-    mov \tmp_char, #0x20 // space
-    ldr \tmp_buff_addr, =\lab
-    ldr \tmp_buff_end, =\lab\()_len
-    add \tmp_buff_end, \tmp_buff_end, \tmp_buff_addr
+clear_buffer:
+    // r2 = buffer, r3 = buffer length
+    push {r2}
+    mov r0, #0x20 // space
+    add r1, r2, r3
     clear_buffer_set_spaces_while_start:
-        strb \tmp_char, [\tmp_buff_addr], #1
-        CMP \tmp_buff_addr, \tmp_buff_end
+        strb r0, [r2], #1
+        CMP r2, r1
         BNE clear_buffer_set_spaces_while_start
-    mov \tmp_char, #0xa // adding EOL every 80 chars
-    ldr \tmp_buff_addr, =\lab+79
+    mov r0, #0xa // adding EOL every 80 chars
+    ldr r2, =screen+79
     clear_buffer_add_end_of_line_while_start:
-        strb \tmp_char, [\tmp_buff_addr], #80
-        CMP \tmp_buff_addr, \tmp_buff_end
-        BLT clear_buffer_add_end_of_line_while_start
-    .endm
+        strb r0, [r2], #80
+        cmp r2, r1
+        blt clear_buffer_add_end_of_line_while_start
+    pop {r2}
+    mov pc, lr
 
-    .macro SLEEP
-    ldr r0, =sleep_timespec_struct
+sleep_till_next_frame:
+    // No arguments, uses sleep_timespec_struct defined above
+    push {r7}
+    ldr r0, =sleep_till_next_frame_timespec_struct
     mov r1, #0  // not used for now
     /* nanosleep syscall */
     mov r7, #0xa2 // syscall ID
     swi #0
-    .endm
+    pop {r7}
+    mov pc, lr
 
 .global _start
 _start:
     PRINT_BUFFER startup_codes
     UPDATE_GRAPHICS
 
-    ldr r0, =screen
-    mov r1, #0x30
-    mov r2, #0
-    mov r3, #0
-    WRITE_CHAR r0, r1, r2, r3, r4
+    ldr r2, =screen
+    ldr r3, =screen_len
+    mov r4, #0x40
+    mov r5, #0
+    mov r6, #0
+test_while_start:
+    bl write_char_to_buffer
     UPDATE_GRAPHICS
-    SLEEP
-    CLEAR_SCREEN_BUFFER screen, r0, r1, r2
-    UPDATE_GRAPHICS
+    bl sleep_till_next_frame
+    bl clear_buffer
+    add r6, r6, #1
+    cmp r6, #80
+    blt test_while_start
 
     PRINT_BUFFER cleanup_codes
 
