@@ -9,8 +9,8 @@
     startup_codes_len = . - startup_codes
     cleanup_codes: .ascii "\x1b[?25h"
     cleanup_codes_len = . - cleanup_codes
-    reset_screen_codes: .ascii "\x1b[2J\x1b[H"
-    reset_screen_codes_len = . - reset_screen_codes
+    reset_graphics_codes: .ascii "\x1b[2J\x1b[H"
+    reset_graphics_codes_len = . - reset_graphics_codes
 
     screen: .ascii "                                                                               
                                                                                
@@ -61,6 +61,11 @@
     PRINT
     .endm
 
+    .macro UPDATE_GRAPHICS
+    PRINT_BUFFER reset_graphics_codes
+    PRINT_BUFFER screen
+    .endm
+
     .macro WRITE_CHAR, buff_addr:req, char:req, posy:req, posx:req, tmp:req
     mov \tmp, #80
     mul \tmp, \posy, \tmp
@@ -96,18 +101,17 @@
 .global _start
 _start:
     PRINT_BUFFER startup_codes
-    PRINT_BUFFER reset_screen_codes
+    UPDATE_GRAPHICS
 
     ldr r0, =screen
     mov r1, #0x30
     mov r2, #0
     mov r3, #0
     WRITE_CHAR r0, r1, r2, r3, r4
-    PRINT_BUFFER screen
+    UPDATE_GRAPHICS
     SLEEP
     CLEAR_SCREEN_BUFFER screen, r0, r1, r2
-    PRINT_BUFFER reset_screen_codes
-    PRINT_BUFFER screen
+    UPDATE_GRAPHICS
 
     PRINT_BUFFER cleanup_codes
 
