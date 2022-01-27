@@ -121,19 +121,16 @@ sleep_till_next_frame:
 .macro NONCANONICAL_MODE_START
     push {r7}
 
-    // Saving old termios struct
     mov r0, #1      // stdin
+    mov r7, #0x36   // syscall ID
+
+    // Saving old termios struct
     mov r1, #0x5401 // TCGETS
     ldr r2, =saved_termios_struct
-    mov r7, #0x36   // syscall ID
     swi #0
-
     // Getting old termios struct again to modify it
     // TODO: copy saved_termios_struct instead of making another syscall
-    mov r0, #1      // stdin
-    mov r1, #0x5401 // TCGETS
     ldr r2, =my_termios_struct
-    mov r7, #0x36   // syscall ID
     swi #0
     
     ldr r2, =my_termios_struct
@@ -146,10 +143,8 @@ sleep_till_next_frame:
     str r3, [r2, #12]
 
     // Setting modified termios struct
-    mov r0, #1
     mov r1, #0x5402 // TCSETS
     ldr r2, =my_termios_struct
-    mov r7, #0x36   // syscall ID
     swi #0
 
 /*
