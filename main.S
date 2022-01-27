@@ -40,18 +40,24 @@
                                                                                "
     screen_len = . - screen
 
+    .align 4
+    sleep_timespec_struct:
+        .long 1 // 1 second
+        .long 0 // 0 nanoseconds
+
 .text
 
     .macro PRINT
-    /* write syscall, r1 and r2 are positionned properly*/
-    mov r0, #1     /* stdout */
-    mov r7, #4     /* Syscall ID. */
+    /* write syscall
+    * assumes that r1 and r2 are positionned properly*/
+    mov r0, #1     // stdout
+    mov r7, #4     // syscall ID
     swi #0
     .endm
 
     .macro PRINT_BUFFER, lab:req
-    ldr r1, =\lab /* buffer */
-    ldr r2, =\lab\()_len   /* len */
+    ldr r1, =\lab           // buffer
+    ldr r2, =\lab\()_len    // len
     PRINT
     .endm
 
@@ -79,6 +85,13 @@
         BLT clear_buffer_add_end_of_line_while_start
     .endm
 
+    .macro SLEEP
+    ldr r0, =sleep_timespec_struct
+    mov r1, #0  // not used for now
+    /* nanosleep syscall */
+    mov r7, #0xa2 // syscall ID
+    swi #0
+    .endm
 
 .global _start
 _start:
@@ -90,13 +103,16 @@ _start:
     mov r2, #0
     mov r3, #0
     WRITE_CHAR r0, r1, r2, r3, r4
+    PRINT_BUFFER screen
+    SLEEP
     CLEAR_SCREEN_BUFFER screen, r0, r1, r2
+    PRINT_BUFFER reset_screen_codes
     PRINT_BUFFER screen
 
     PRINT_BUFFER cleanup_codes
 
     /* exit syscall */
-    mov r0, #0 /* Status. */
-    mov r7, #1 /* Syscall ID. */
+    mov r0, #0 // status
+    mov r7, #1 // syscall ID
     swi #0
 
