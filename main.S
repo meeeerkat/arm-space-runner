@@ -146,7 +146,7 @@ update_one_laser:
     cmp r2, #0
     blt update_next_laser
 
-    cmp r3, #80          // verifying value
+    cmp r3, #79          // verifying value
     bge update_next_laser
     cmp r3, #0
     blt update_next_laser
