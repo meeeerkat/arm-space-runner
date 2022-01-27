@@ -316,8 +316,9 @@ main_while_start:
     bgt main_while_start
     
     NONCANONICAL_MODE_END
-    
+    PRINT_BUFFER reset_graphics_codes
     PRINT_BUFFER cleanup_codes
+
     /* exit syscall */
     mov r0, #0 // status
     mov r7, #1 // syscall ID
