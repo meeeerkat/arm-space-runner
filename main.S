@@ -117,12 +117,12 @@ sleep_till_next_frame:
 // SPECIFIC FUNCTIONS START
 .data
 // lazers {char, posy, vely, posx, velx}
-lazers: .skip 100
+lazers: .skip 1000
 lazers_end:
 //0x41, 20, -1, 0, 1, 0x42, 0, 1, 70, -1, 0x43, 0, 1, 30, 1
 lazers_len = . - lazers
 next_lazer_addr: .word lazers   // Rotating addr
-random_bytes: .skip 2
+random_bytes: .skip 4
 random_bytes_len = . - random_bytes
 
 .text
@@ -176,6 +176,7 @@ add_random_lazer:
 
     ldr r3, =next_lazer_addr
     ldr r3, [r3]
+    add r3, r3, #10
 
     mov r5, #0x41
     strb r5, [r3], #1
@@ -192,8 +193,24 @@ add_random_lazer:
     mov r2, #0
     mov r7, #0x180     // syscall ID
     swi #0
+    // r0 IS OVERWRITTEN BY size_t RETURN PARAMETER
+    // TODO: handle case where we didn't received enough random bytes
+    ldr r0, =random_bytes
     
     ldrb r5, [r0], #1
+
+/*
+    push {r0, r2, r7}
+    mov r0, #1     // stdout
+    add r1, r5, #0x30
+    push {r1}
+    mov r1, sp
+    mov r2, #1
+    mov r7, #4     // syscall ID
+    swi #0
+    pop {r1}
+    pop {r0, r2, r7}
+*/
     TST r5, #0b1
     // r5 = startpos.y, r6 = velocity.y
     moveq r5, #0
@@ -208,14 +225,14 @@ add_random_lazer:
     mov r5, r5, LSR #2      // only using 6 bits so we only have 2^6=64 combinations
     add r5, r5, #(80-64)/2  // centering startpos.x
     strb r5, [r3], #1
-    TST r5, #0b10000000      // Using the eigth random bit to determine velocity.x
+    TST r5, #0b1000000      // Using the seventh random bit to determine velocity.x
     moveq r5, #1
     ldrne r5, =-1
     strb r5, [r3], #1
     
     ldr r4, =lazers_end
     cmp r3, r4          // if next_lazer_addr is at the end of the lazers array
-    ldreq r3, =lazers   // move it back to the beginning
+    ldrge r3, =lazers   // move it back to the beginning (r3 = r4+1 because we post index it)
     // Storing new next address
     ldr r4, =next_lazer_addr
     str r3, [r4]
