@@ -117,9 +117,9 @@ sleep_till_next_frame:
 // SPECIFIC FUNCTIONS START
 .data
 // lasers {char, posy, vely, posx, velx}
+// ex: ex:  0x41, 20, -1, 0, 1, 0x42, 0, 1, 70, -1, 0x43, 0, 1, 30, 1
 lasers: .skip 1000
 lasers_end:
-//0x41, 20, -1, 0, 1, 0x42, 0, 1, 70, -1, 0x43, 0, 1, 30, 1
 lasers_len = . - lasers
 next_laser_addr: .word lasers   // Rotating addr
 random_bytes: .skip 4
@@ -176,7 +176,6 @@ add_random_laser:
 
     ldr r3, =next_laser_addr
     ldr r3, [r3]
-    add r3, r3, #10
 
     mov r5, #0x41
     strb r5, [r3], #1
@@ -188,6 +187,7 @@ add_random_laser:
     // We then need to set the velocity (for now it'll be calculated based on starting position)
     // RIGHT NOW THE laserS WILL ONLY SPAWN FROM THE TOP OR BOTTOM (to simplify)
 
+    /* getrandom syscall */
     ldr r0, =random_bytes
     ldr r1, =random_bytes_len
     mov r2, #0
@@ -197,21 +197,8 @@ add_random_laser:
     // TODO: handle case where we didn't received enough random bytes
     ldr r0, =random_bytes
     
-    ldrb r5, [r0], #1
-
-/*
-    push {r0, r2, r7}
-    mov r0, #1     // stdout
-    add r1, r5, #0x30
-    push {r1}
-    mov r1, sp
-    mov r2, #1
-    mov r7, #4     // syscall ID
-    swi #0
-    pop {r1}
-    pop {r0, r2, r7}
-*/
-    TST r5, #0b1
+    ldrb r5, [r0], #1   // loading first random byte in r5
+    TST r5, #0b1        // determining startpos.y with the first bit
     // r5 = startpos.y, r6 = velocity.y
     moveq r5, #0
     moveq r6, #1
@@ -220,19 +207,18 @@ add_random_laser:
     strb r5, [r3], #1
     strb r6, [r3], #1
 
-    // loading the next random byte
-    ldrb r5, [r0], #1
+    ldrb r5, [r0], #1       // loading the next random byte
     mov r5, r5, LSR #2      // only using 6 bits so we only have 2^6=64 combinations
     add r5, r5, #(80-64)/2  // centering startpos.x
     strb r5, [r3], #1
-    TST r5, #0b1000000      // Using the seventh random bit to determine velocity.x
+    TST r5, #0b1000000      // using the seventh random bit to determine velocity.x
     moveq r5, #1
     ldrne r5, =-1
     strb r5, [r3], #1
     
     ldr r4, =lasers_end
-    cmp r3, r4          // if next_laser_addr is at the end of the lasers array
-    ldrge r3, =lasers   // move it back to the beginning (r3 = r4+1 because we post index it)
+    cmp r3, r4              // if next_laser_addr is at the end of the lasers array
+    ldrge r3, =lasers       // move it back to the beginning (r3 = r4+1 because we post index it)
     // Storing new next address
     ldr r4, =next_laser_addr
     str r3, [r4]
@@ -269,3 +255,4 @@ main_while_start:
     mov r0, #0 // status
     mov r7, #1 // syscall ID
     swi #0
+
