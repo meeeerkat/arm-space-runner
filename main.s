@@ -57,39 +57,3 @@ m_while_start:
     mov r7, #1 // syscall ID
     swi #0
 
-/*
-
-_start:
-    PRINT_BUFFER startup_codes
-    PRINT_BUFFER reset_graphics_codes
-    NONCANONICAL_MODE_START
-    CONFIGURE_NON_BLOCKING_INPUT
-
-    bl clear_screen_buffer
-
-    ldr r0, =spaceship_pos
-    bl write_spaceship_to_screen
-
-    mov r4, #1000
-    ldr r5, =screen
-main_while_start:
-    bl handle_input
-    ldr r0, =spaceship_pos
-    bl write_spaceship_to_screen
-    bl add_random_laser
-    bl update_lasers
-    UPDATE_GRAPHICS
-    bl clear_screen_buffer
-    bl sleep_till_next_frame
-    cmp r4, #0
-    sub r4, r4, #1
-    bgt main_while_start
-    
-    NONCANONICAL_MODE_END
-    PRINT_BUFFER reset_graphics_codes
-    PRINT_BUFFER cleanup_codes
-
-    mov r0, #0 // status
-    mov r7, #1 // syscall ID
-    swi #0
-*/
