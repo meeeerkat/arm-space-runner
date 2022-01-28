@@ -135,11 +135,7 @@ sleep_till_next_frame:
     
     ldr r2, =my_termios_struct
     ldr r3, [r2, #12]
-    mov r4, #0
-    orr r4, r4, #2
-    orr r4, r4, #10
-    mvn r4, r4
-    and r3, r3, r4 // clear ICANON (=2) and ECHO (=10=8+2)
+    and r3, r3, #~10 // clear ICANON (=2) and ECHO (=10=8+2)
     str r3, [r2, #12]
 
     // Setting modified termios struct
