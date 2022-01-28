@@ -6,6 +6,10 @@
 
 
 .data
+    .equ screen_width, 80
+    .equ screen_height, 25
+    .equ time_delta, 50000000 // in nanoseconds
+
     startup_codes: .ascii "\x1b[?25l"
     startup_codes_len = . - startup_codes
     cleanup_codes: .ascii "\x1b[?25h"
@@ -15,7 +19,7 @@
     go_home_code: .ascii "\x1b[H"
     go_home_code_len = . - go_home_code
 
-    screen: .skip 80*25
+    screen: .skip screen_width*screen_height
     screen_end:
     screen_len = . - screen
 
@@ -28,14 +32,14 @@
         .skip 4*4 + 1 + 19
 
     winsize_struct:
-        .short 25
-        .short 80
+        .short screen_height
+        .short screen_width
         .short 0     // unused
         .short 0     // unused
 
     sleep_till_next_frame_timespec_struct:
         .long 0 // seconds
-        .long 500000000 // nanoseconds
+        .long time_delta // nanoseconds
 
 .text
 
@@ -64,7 +68,7 @@ write_char_to_buffer:
     // r0 = buffer, r1 = char, r2 = posy, r3 = posx
     // DOES NOT MODIFY ITS PARAMETERS
     push {r4}
-    mov r4, #80
+    mov r4, #screen_width
     mul r4, r2, r4
     add r4, r4, r3
     strb r1, [r0, r4]
@@ -81,10 +85,10 @@ clear_screen_buffer:
         strb r2, [r0], #1
         CMP r0, r1
         BNE clear_buffer_set_spaces_while_start
-    mov r2, #0xa // adding EOL every 80 chars
-    ldr r0, =screen+80
+    mov r2, #0xa // adding EOL every #screen_width# chars
+    ldr r0, =screen+screen_width
     clear_buffer_add_end_of_line_while_start:
-        strb r2, [r0], #80
+        strb r2, [r0], #screen_width
         cmp r0, r1
         blt clear_buffer_add_end_of_line_while_start
     mov pc, lr
@@ -195,12 +199,12 @@ update_one_laser:
     ldrb r2, [r4], #2   // loading posy
     ldrb r3, [r4], #2   // loading posx
     
-    cmp r2, #25          // verifying value
+    cmp r2, #screen_height  // verifying value
     bge update_next_laser
     cmp r2, #0
     blt update_next_laser
 
-    cmp r3, #79          // verifying value
+    cmp r3, #screen_width   // verifying value
     bge update_next_laser
     cmp r3, #0
     blt update_next_laser
@@ -263,7 +267,7 @@ add_random_laser:
 
     ldrb r5, [r0], #1       // loading the next random byte
     mov r5, r5, LSR #2      // only using 6 bits so we only have 2^6=64 combinations
-    add r5, r5, #(80-64)/2  // centering startpos.x
+    add r5, r5, #(screen_width-64)/2  // centering startpos.x
     strb r5, [r3], #1
     TST r5, #0b1000000      // using the seventh random bit to determine velocity.x
     moveq r5, #1
@@ -294,7 +298,7 @@ _start:
 
     bl clear_screen_buffer
 
-    mov r4, #10
+    mov r4, #100
     ldr r5, =screen
 main_while_start:
     bl add_random_laser
