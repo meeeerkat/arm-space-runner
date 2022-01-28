@@ -1,6 +1,6 @@
 
 
-.include "global_constants.s"
+.include "src/global_constants.s"
 
 
 // SLEEP START

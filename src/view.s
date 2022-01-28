@@ -1,6 +1,6 @@
 
 
-.include "global_constants.s"
+.include "src/global_constants.s"
 
 .global view_init
 .global view_tick
