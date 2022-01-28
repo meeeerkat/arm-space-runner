@@ -8,7 +8,6 @@ In the finished game the player will control a "spacecraft" and will have to avo
 
 
 ### TODO
-- Prevent spaceship from going out of the screen
 - Add event when the spaceship is hit to game over
 - Improve spaceship control
 - Improve laser's generation

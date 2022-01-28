@@ -346,14 +346,35 @@ handle_input:
     // r2 = spaceship_pos.y, r3 = spaceship_pos.x
     // updating r2, r3
     ldrb r1, [r1]
+
     cmp r1, #ascii_w
-    subeq r2, r2, #1
+    bne handle_input_s
+    cmp r2, #0
+    beq handle_input_end
+    sub r2, r2, #1
+    b handle_input_save_newpos
+handle_input_s:
     cmp r1, #ascii_s
-    addeq r2, r2, #1
+    bne handle_input_d
+    cmp r2, #screen_height-1
+    beq handle_input_end
+    add r2, r2, #1
+    b handle_input_save_newpos
+handle_input_d:
     cmp r1, #ascii_d
-    addeq r3, r3, #1
+    bne handle_input_a
+    cmp r3, #screen_width-1
+    beq handle_input_end
+    add r3, r3, #1
+    b handle_input_save_newpos
+handle_input_a:
     cmp r1, #ascii_a
-    subeq r3, r3, #1
+    bne handle_input_end
+    cmp r3, #1                  // WHY 1 AND NOT 0 ??? (doesnt work with 0 but why)
+    beq handle_input_end
+    sub r3, r3, #1
+
+handle_input_save_newpos:
     // saving new spaceship_pos
     strb r2, [r0]
     strb r3, [r0, #1]
@@ -379,7 +400,7 @@ _start:
     ldr r0, =spaceship_pos
     bl write_spaceship_to_screen
 
-    mov r4, #100
+    mov r4, #1000
     ldr r5, =screen
 main_while_start:
     bl handle_input
