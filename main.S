@@ -207,6 +207,11 @@ input_buffer: .skip 1
 .equ spaceship_char, 0x40
 spaceship_pos: .byte screen_height/2, screen_width/2
 
+.equ ascii_a, 0x61
+.equ ascii_d, 0x64
+.equ ascii_s, 0x73
+.equ ascii_w, 0x77
+
 .text
 update_lasers:
     // Takes no argument
@@ -336,15 +341,22 @@ handle_input:
     // actual input hanling
     // loading spaceship_pos
     ldr r0, =spaceship_pos
-    ldrb r1, [r0]
-    ldrb r2, [r0, #1]
-    // r1 = spaceship_pos.y, r2 = spaceship_pos.x
+    ldrb r2, [r0]
+    ldrb r3, [r0, #1]
+    // r2 = spaceship_pos.y, r3 = spaceship_pos.x
     // updating r2, r3
-    add r1, r1, #1
-    sub r2, r2, #1
+    ldrb r1, [r1]
+    cmp r1, #ascii_w
+    subeq r2, r2, #1
+    cmp r1, #ascii_s
+    addeq r2, r2, #1
+    cmp r1, #ascii_d
+    addeq r3, r3, #1
+    cmp r1, #ascii_a
+    subeq r3, r3, #1
     // saving new spaceship_pos
-    strb r1, [r0]
-    strb r2, [r0, #1]
+    strb r2, [r0]
+    strb r3, [r0, #1]
 
 handle_input_end:
     pop {r7}
