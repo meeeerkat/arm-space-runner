@@ -7,11 +7,13 @@ compile: main.elf
 run: main.elf 
 	qemu-arm main.elf
 
-main.S:
-screen_management.S:
+main.s:
+screen.s:
+lazers.s:
+spaceship.s:
 
-main.out: main.S screen_management.S
-	arm-none-eabi-as -mcpu=cortex-a8 -mfpu=vfpv2 -o main.out main.S
+main.out: main.s screen.s lasers.s spaceship.s
+	arm-none-eabi-as -mcpu=cortex-a8 -mfpu=vfpv2 -o main.out main.s
 main.elf: main.out
 	arm-none-eabi-ld main.out -o main.elf
 

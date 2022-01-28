@@ -1,33 +1,9 @@
 
 
-.include "screen_management.S"
+/*
+ * Lasers management
+ */
 
-
-// SLEEP START
-.data
-    .equ time_delta, 50000000 // in nanoseconds
-    sleep_till_next_frame_timespec_struct:
-        .long 0 // seconds
-        .long time_delta // nanoseconds
-.text
-
-sleep_till_next_frame:
-    // Takes no arguments, uses sleep_timespec_struct defined above
-    push {r7}
-    ldr r0, =sleep_till_next_frame_timespec_struct
-    mov r1, #0  // not used for now
-    /* nanosleep syscall */
-    mov r7, #0xa2 // syscall ID
-    swi #0
-    pop {r7}
-    mov pc, lr
-
-// SLEEP END
-
-
-
-
-// SPECIFIC FUNCTIONS START
 .data
     // lasers {char, posy, vely, posx, velx}
     // ex: ex:  0x41, 20, -1, 0, 1, 0x42, 0, 1, 70, -1, 0x43, 0, 1, 30, 1
@@ -37,15 +13,6 @@ sleep_till_next_frame:
     next_laser_addr: .word lasers   // Rotating addr
     random_bytes: .skip 4
     random_bytes_len = . - random_bytes
-
-    input_buffer: .skip 1
-    .equ spaceship_char, 0x40
-    spaceship_pos: .byte screen_height/2, screen_width/2
-
-    .equ ascii_a, 0x61
-    .equ ascii_d, 0x64
-    .equ ascii_s, 0x73
-    .equ ascii_w, 0x77
 
 
 .text
@@ -148,115 +115,4 @@ add_random_laser:
 
     pop {r4, r5, r6, r7}
     mov pc, lr
-
-write_spaceship_to_screen:
-    push {lr}
-    // r0 = spaceship_pos buffer
-    ldrb r2, [r0]
-    ldrb r3, [r0, #1]
-    ldr r0, =screen
-    mov r1, #spaceship_char
-    bl write_char_to_buffer
-
-    pop {pc}
-    
-
-handle_input:
-    push {r7}
-    /* read syscall */
-    mov r0, #1              // stdin
-    ldr r1, =input_buffer   // buffer
-    mov r2, #1              // reading char by char
-    mov r7, #0x3            // syscall ID
-    swi #0
-
-    // checking we actually read something
-    cmp r0, #0
-    blt handle_input_end
-    
-    // actual input hanling
-    // loading spaceship_pos
-    ldr r0, =spaceship_pos
-    ldrb r2, [r0]
-    ldrb r3, [r0, #1]
-    // r2 = spaceship_pos.y, r3 = spaceship_pos.x
-    // updating r2, r3
-    ldrb r1, [r1]
-
-    cmp r1, #ascii_w
-    bne handle_input_s
-    cmp r2, #0
-    beq handle_input_end
-    sub r2, r2, #1
-    b handle_input_save_newpos
-handle_input_s:
-    cmp r1, #ascii_s
-    bne handle_input_d
-    cmp r2, #screen_height-1
-    beq handle_input_end
-    add r2, r2, #1
-    b handle_input_save_newpos
-handle_input_d:
-    cmp r1, #ascii_d
-    bne handle_input_a
-    cmp r3, #screen_width-1
-    beq handle_input_end
-    add r3, r3, #1
-    b handle_input_save_newpos
-handle_input_a:
-    cmp r1, #ascii_a
-    bne handle_input_end
-    cmp r3, #1                  // WHY 1 AND NOT 0 ??? (doesnt work with 0 but why)
-    beq handle_input_end
-    sub r3, r3, #1
-
-handle_input_save_newpos:
-    // saving new spaceship_pos
-    strb r2, [r0]
-    strb r3, [r0, #1]
-
-handle_input_end:
-    pop {r7}
-    mov pc, lr
-
-// SPECIFIC FUNCTIONS END
-
-
-
-.text
-.global _start
-_start:
-    PRINT_BUFFER startup_codes
-    PRINT_BUFFER reset_graphics_codes
-    NONCANONICAL_MODE_START
-    CONFIGURE_NON_BLOCKING_INPUT
-
-    bl clear_screen_buffer
-
-    ldr r0, =spaceship_pos
-    bl write_spaceship_to_screen
-
-    mov r4, #1000
-    ldr r5, =screen
-main_while_start:
-    bl handle_input
-    ldr r0, =spaceship_pos
-    bl write_spaceship_to_screen
-    bl add_random_laser
-    bl update_lasers
-    UPDATE_GRAPHICS
-    bl clear_screen_buffer
-    bl sleep_till_next_frame
-    cmp r4, #0
-    sub r4, r4, #1
-    bgt main_while_start
-    
-    NONCANONICAL_MODE_END
-    PRINT_BUFFER reset_graphics_codes
-    PRINT_BUFFER cleanup_codes
-
-    /* exit syscall */
-    mov r0, #0 // status
-    mov r7, #1 // syscall ID
-    swi #0
 

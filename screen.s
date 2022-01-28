@@ -5,18 +5,6 @@
  * Screen management
  */
 
-.global startup_codes
-.global cleanup_codes
-.global reset_graphics_codes
-.global go_home_code
-.global PRINT_BUFFER
-.global write_char_to_buffer
-.global NONCANONICAL_MODE_START
-.global NONCANONICAL_MODE_END
-.global CONFIGURE_NON_BLOCKING_INPUT
-.global screen_width
-.global screen_height
-
 .data
     .equ screen_width, 80
     .equ screen_height, 25
