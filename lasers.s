@@ -1,5 +1,11 @@
 
 
+.include "global_constants.s"
+
+.global lasers_init
+.global lasers_tick
+
+
 /*
  * Lasers management
  */

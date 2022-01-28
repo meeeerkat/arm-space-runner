@@ -1,5 +1,11 @@
 
 
+.include "global_constants.s"
+
+.global spaceship_init
+.global spaceship_tick
+
+
 /*
  * Spaceship management
  */

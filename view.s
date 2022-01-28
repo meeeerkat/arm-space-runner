@@ -1,14 +1,22 @@
 
 
+.include "global_constants.s"
+
+.global view_init
+.global view_tick
+.global view_destroy
+
+.global screen
+.global screen_end
+.global screen_len
+.global write_char_to_buffer
+
 
 /*
  * Screen management
  */
 
 .data
-    .equ screen_width, 80
-    .equ screen_height, 25
-
     startup_codes: .ascii "\x1b[?25l"
     startup_codes_len = . - startup_codes
     cleanup_codes: .ascii "\x1b[?25h"

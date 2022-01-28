@@ -1,8 +1,6 @@
 
 
-.include "view.s"
-.include "lasers.s"
-.include "spaceship.s"
+.include "global_constants.s"
 
 
 // SLEEP START
