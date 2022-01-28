@@ -167,6 +167,26 @@ sleep_till_next_frame:
     pop {r7}
 .endm
 
+.macro CONFIGURE_NON_BLOCKING_INPUT
+    push {r7}
+    /* fcntl get syscall */
+    mov r0, #1      // stdin
+    mov r1, #3      // F_GETFL
+    mov r2, #0
+    mov r7, #0x37   // syscall ID
+    swi #0
+    mov r2, r0
+    // r2 = fcntl return = current flags
+
+    /* fcntl set syscall */
+    mov r0, #1              // stdin reset (r0 was return value)
+    mov r1, #4              // F_SETFL
+    orr r2, r2, #00004000   // O_NONBLOCK flag set
+    swi #0
+
+    pop {r7}
+.endm
+
 
 // GENERAL FUNCTIONS END
 
@@ -182,6 +202,8 @@ lasers_len = . - lasers
 next_laser_addr: .word lasers   // Rotating addr
 random_bytes: .skip 4
 random_bytes_len = . - random_bytes
+
+input_buffer: .skip 1
 
 .text
 update_lasers:
@@ -284,6 +306,29 @@ add_random_laser:
     pop {r4, r5, r6, r7}
     mov pc, lr
 
+handle_input:
+    push {r7}
+    /* read syscall */
+    mov r0, #1              // stdin
+    ldr r1, =input_buffer   // buffer
+    mov r2, #1              // reading char by char
+    mov r7, #0x3            // syscall ID
+    swi #0
+
+    // checking we actually read something
+    cmp r0, #0
+    blt handle_input_end
+    
+    // actual input hanling
+    /* exit syscall */
+    mov r0, #0 // status
+    mov r7, #1 // syscall ID
+    swi #0
+
+
+handle_input_end:
+    pop {r7}
+    mov pc, lr
 
 // SPECIFIC FUNCTIONS END
 
@@ -295,12 +340,14 @@ _start:
     PRINT_BUFFER startup_codes
     PRINT_BUFFER reset_graphics_codes
     NONCANONICAL_MODE_START
+    CONFIGURE_NON_BLOCKING_INPUT
 
     bl clear_screen_buffer
 
     mov r4, #100
     ldr r5, =screen
 main_while_start:
+    bl handle_input
     bl add_random_laser
     bl update_lasers
     UPDATE_GRAPHICS
