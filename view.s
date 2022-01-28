@@ -65,12 +65,6 @@
     PRINT
 .endm
 
-.macro UPDATE_GRAPHICS
-    PRINT_BUFFER go_home_code
-    PRINT_BUFFER screen
-.endm
-
-
 /* ioctl syscall (with stdin so no need to do an open syscall)
      * see man tty_ioctl
      * It's pretty hard to find good information on how to use this
@@ -168,17 +162,17 @@ view_init:
 
 view_tick:
     push {lr}
-    UPDATE_GRAPHICS
+    // Updating graphics
+    PRINT_BUFFER go_home_code
+    PRINT_BUFFER screen
+    // Cleaning buffer
     bl clear_screen_buffer
     pop {pc}
-
 
 view_destroy:
     NONCANONICAL_MODE_END
     PRINT_BUFFER reset_graphics_codes
     PRINT_BUFFER cleanup_codes
-
-
 
 
 
