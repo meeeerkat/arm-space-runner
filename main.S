@@ -204,6 +204,8 @@ random_bytes: .skip 4
 random_bytes_len = . - random_bytes
 
 input_buffer: .skip 1
+.equ spaceship_char, 0x40
+spaceship_pos: .byte screen_height/2, screen_width/2
 
 .text
 update_lasers:
@@ -306,6 +308,18 @@ add_random_laser:
     pop {r4, r5, r6, r7}
     mov pc, lr
 
+write_spaceship_to_screen:
+    push {lr}
+    // r0 = spaceship_pos buffer
+    ldrb r2, [r0]
+    ldrb r3, [r0, #1]
+    ldr r0, =screen
+    mov r1, #spaceship_char
+    bl write_char_to_buffer
+
+    pop {pc}
+    
+
 handle_input:
     push {r7}
     /* read syscall */
@@ -320,11 +334,17 @@ handle_input:
     blt handle_input_end
     
     // actual input hanling
-    /* exit syscall */
-    mov r0, #0 // status
-    mov r7, #1 // syscall ID
-    swi #0
-
+    // loading spaceship_pos
+    ldr r0, =spaceship_pos
+    ldrb r1, [r0]
+    ldrb r2, [r0, #1]
+    // r1 = spaceship_pos.y, r2 = spaceship_pos.x
+    // updating r2, r3
+    add r1, r1, #1
+    sub r2, r2, #1
+    // saving new spaceship_pos
+    strb r1, [r0]
+    strb r2, [r0, #1]
 
 handle_input_end:
     pop {r7}
@@ -344,10 +364,15 @@ _start:
 
     bl clear_screen_buffer
 
+    ldr r0, =spaceship_pos
+    bl write_spaceship_to_screen
+
     mov r4, #100
     ldr r5, =screen
 main_while_start:
     bl handle_input
+    ldr r0, =spaceship_pos
+    bl write_spaceship_to_screen
     bl add_random_laser
     bl update_lasers
     UPDATE_GRAPHICS
