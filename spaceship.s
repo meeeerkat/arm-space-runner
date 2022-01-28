@@ -18,6 +18,21 @@
 
 .text
 
+spaceship_init:
+    push {lr}
+    ldr r0, =spaceship_pos
+    bl write_spaceship_to_screen
+    pop {pc}
+
+spaceship_tick:
+    push {lr}
+    bl handle_input
+    ldr r0, =spaceship_pos
+    bl write_spaceship_to_screen
+    pop {pc}
+
+
+
 write_spaceship_to_screen:
     push {lr}
     // r0 = spaceship_pos buffer

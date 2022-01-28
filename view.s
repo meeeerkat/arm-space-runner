@@ -38,6 +38,9 @@
 
 .text
 
+
+// MACROS START
+
 .macro PRINT
     /* write syscall
     * assumes that r1 and r2 are positionned properly*/
@@ -58,35 +61,6 @@
     PRINT_BUFFER go_home_code
     PRINT_BUFFER screen
 .endm
-
-write_char_to_buffer:
-    // r0 = buffer, r1 = char, r2 = posy, r3 = posx
-    // DOES NOT MODIFY ITS PARAMETERS
-    push {r4}
-    mov r4, #screen_width
-    mul r4, r2, r4
-    add r4, r4, r3
-    strb r1, [r0, r4]
-    pop {r4}
-    mov pc, lr
-    
-
-clear_screen_buffer:
-    // Takes no arguments
-    ldr r0, =screen
-    ldr r1, =screen_end
-    mov r2, #0x20 // space
-    clear_buffer_set_spaces_while_start:
-        strb r2, [r0], #1
-        CMP r0, r1
-        BNE clear_buffer_set_spaces_while_start
-    mov r2, #0xa // adding EOL every #screen_width# chars
-    ldr r0, =screen+screen_width
-    clear_buffer_add_end_of_line_while_start:
-        strb r2, [r0], #screen_width
-        cmp r0, r1
-        blt clear_buffer_add_end_of_line_while_start
-    mov pc, lr
 
 
 /* ioctl syscall (with stdin so no need to do an open syscall)
@@ -169,5 +143,64 @@ clear_screen_buffer:
 
     pop {r7}
 .endm
+
+// MACROS END
+
+
+
+view_init:
+    push {lr}
+    PRINT_BUFFER startup_codes
+    PRINT_BUFFER reset_graphics_codes
+    NONCANONICAL_MODE_START
+    CONFIGURE_NON_BLOCKING_INPUT
+    
+    bl clear_screen_buffer
+    pop {pc}
+
+view_tick:
+    push {lr}
+    UPDATE_GRAPHICS
+    bl clear_screen_buffer
+    pop {pc}
+
+
+view_destroy:
+    NONCANONICAL_MODE_END
+    PRINT_BUFFER reset_graphics_codes
+    PRINT_BUFFER cleanup_codes
+
+
+
+
+
+write_char_to_buffer:
+    // r0 = buffer, r1 = char, r2 = posy, r3 = posx
+    // DOES NOT MODIFY ITS PARAMETERS
+    push {r4}
+    mov r4, #screen_width
+    mul r4, r2, r4
+    add r4, r4, r3
+    strb r1, [r0, r4]
+    pop {r4}
+    mov pc, lr
+    
+
+clear_screen_buffer:
+    // Takes no arguments
+    ldr r0, =screen
+    ldr r1, =screen_end
+    mov r2, #0x20 // space
+    clear_buffer_set_spaces_while_start:
+        strb r2, [r0], #1
+        CMP r0, r1
+        BNE clear_buffer_set_spaces_while_start
+    mov r2, #0xa // adding EOL every #screen_width# chars
+    ldr r0, =screen+screen_width
+    clear_buffer_add_end_of_line_while_start:
+        strb r2, [r0], #screen_width
+        cmp r0, r1
+        blt clear_buffer_add_end_of_line_while_start
+    mov pc, lr
 
 

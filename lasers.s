@@ -16,6 +16,18 @@
 
 
 .text
+
+lasers_init:
+    mov pc, lr
+
+lasers_tick:
+    push {lr}
+    bl add_random_laser
+    bl update_lasers
+    pop {pc}
+
+
+
 update_lasers:
     // Takes no argument
     // Assumes that buffer has been cleared from previous lasers
