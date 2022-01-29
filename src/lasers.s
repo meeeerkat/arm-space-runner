@@ -112,7 +112,6 @@ update_one_laser:
     add r3, r3, r1      // calculating new posx
     strb r3, [r4, #7]   // storing new posx
 
-
 update_next_laser:
     add r4, r4, #10
     cmp r4, r5
