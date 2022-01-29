@@ -16,7 +16,8 @@
     .equ ascii_s, 0x73
     .equ ascii_w, 0x77
 
-    input_buffer: .skip 1
+    input_buffer: .skip 1000
+    input_buffer_len = . - input_buffer
 
     .equ spaceship_char, 0x40
     spaceship_pos: .byte screen_height/2, screen_width/2
@@ -60,10 +61,10 @@ handle_input:
 
     push {r7}
     /* read syscall */
-    mov r0, #1              // stdin
-    ldr r1, =input_buffer   // buffer
-    mov r2, #1              // reading char by char
-    mov r7, #0x3            // syscall ID
+    mov r0, #1                  // stdin
+    ldr r1, =input_buffer       // buffer
+    ldr r2, =input_buffer_len   // clearing buffer by taking many chars
+    mov r7, #0x3                // syscall ID
     swi #0
 
     // checking we actually read something
@@ -77,7 +78,7 @@ handle_input:
     ldrb r3, [r0, #1]
     // r2 = spaceship_pos.y, r3 = spaceship_pos.x
     // updating r2, r3
-    ldrb r1, [r1]
+    ldrb r1, [r1] // only keeping the first char of the read input_buffer
 
     cmp r1, #ascii_w
     bne handle_input_s
