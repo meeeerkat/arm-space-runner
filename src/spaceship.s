@@ -11,15 +11,18 @@
  */
 
 .data
-    input_buffer: .skip 1
-    .equ spaceship_char, 0x40
-    spaceship_pos: .byte screen_height/2, screen_width/2
-
     .equ ascii_a, 0x61
     .equ ascii_d, 0x64
     .equ ascii_s, 0x73
     .equ ascii_w, 0x77
 
+    input_buffer: .skip 1
+
+    .equ spaceship_char, 0x40
+    spaceship_pos: .byte screen_height/2, screen_width/2
+
+    next_move_spaceship_tick_nb: .word 0
+    .equ move_spaceship_tick_delta, 5
 
 .text
 
@@ -31,7 +34,13 @@ spaceship_init:
 
 spaceship_tick:
     push {lr}
+
+    // Are we moving the spaceship this tick ?
+    ldr r1, =next_move_spaceship_tick_nb
+    TICK_CHECK_AND_UPDATE_OR_JUMP r0, r1, r2, #move_spaceship_tick_delta, 1f
+
     bl handle_input
+1:
     ldr r0, =spaceship_pos
     bl write_spaceship_to_screen
     pop {pc}
