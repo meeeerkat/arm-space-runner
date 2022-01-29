@@ -10,7 +10,7 @@
  */
 
 .data
-    .equ time_delta, 50000000 // in nanoseconds
+    .equ time_delta, 10000000 // in nanoseconds
     sleep_till_next_frame_timespec_struct:
         .long 0 // seconds
         .long time_delta // nanoseconds

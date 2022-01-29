@@ -173,6 +173,7 @@ view_destroy:
     NONCANONICAL_MODE_END
     PRINT_BUFFER reset_graphics_codes
     PRINT_BUFFER cleanup_codes
+    mov pc, lr
 
 
 
