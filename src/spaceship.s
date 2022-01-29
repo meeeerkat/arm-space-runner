@@ -4,6 +4,7 @@
 
 .global spaceship_init
 .global spaceship_tick
+.global spaceship_handle_input
 
 
 /*
@@ -15,9 +16,7 @@
     .equ ascii_d, 0x64
     .equ ascii_s, 0x73
     .equ ascii_w, 0x77
-
-    input_buffer: .skip 1000
-    input_buffer_len = . - input_buffer
+    last_input: .byte 0
 
     .equ spaceship_char, 0x40
     spaceship_pos: .byte screen_height/2, screen_width/2
@@ -35,7 +34,7 @@ spaceship_init:
 
 spaceship_tick:
     push {lr}
-    bl handle_input
+    bl move
     ldr r0, =spaceship_pos
     bl write_spaceship_to_screen
     pop {pc}
@@ -54,65 +53,87 @@ write_spaceship_to_screen:
     pop {pc}
     
 
-handle_input:
+spaceship_handle_input:
+    // r0 = character
+    // out: r0 = (consumed) ? 0 : r0
+    cmp r0, #ascii_w
+    beq 1f
+    cmp r0, #ascii_s
+    beq 1f
+    cmp r0, #ascii_d
+    beq 1f
+    cmp r0, #ascii_a
+    beq 1f
+    mov pc, lr // input key isn't used for spaceship control
+1:
+    // if the input is a valid key
+    ldr r1, =last_input
+    strb r0, [r1]
+    mov r0, #0 // consuming character
+    mov pc, lr
+
+move:
     // Are we moving the spaceship this tick ?
     ldr r1, =next_move_spaceship_tick_nb
     TICK_CHECK_AND_UPDATE_OR_RETURN r0, r1, r2, #move_spaceship_tick_delta
 
     push {r7}
-    /* read syscall */
-    mov r0, #1                  // stdin
-    ldr r1, =input_buffer       // buffer
-    ldr r2, =input_buffer_len   // clearing buffer by taking many chars
-    mov r7, #0x3                // syscall ID
-    swi #0
 
-    // checking we actually read something
-    cmp r0, #0
-    blt handle_input_end
-    
-    // actual input hanling
-    // loading spaceship_pos
+    // Loading the last input
+    ldr r1, =last_input
+    ldrb r1, [r1]
+
+    // if there was no user spaceship related player input for this tick
+    // to disable if wanted behavior is the ship always moving (as it becomes useless)
+    cmp r1, #0
+    beq move_end // we go directly to the end (no need to check every key or to update anything)
+
+    // Loading spaceship_pos
     ldr r0, =spaceship_pos
     ldrb r2, [r0]
     ldrb r3, [r0, #1]
     // r2 = spaceship_pos.y, r3 = spaceship_pos.x
-    // updating r2, r3
-    ldrb r1, [r1] // only keeping the first char of the read input_buffer
-
+ 
+    // Updating r2, r3
     cmp r1, #ascii_w
-    bne handle_input_s
+    bne move_s
     cmp r2, #0
-    beq handle_input_end
+    beq move_end
     sub r2, r2, #1
-    b handle_input_save_newpos
-handle_input_s:
+    b move_save_newpos
+move_s:
     cmp r1, #ascii_s
-    bne handle_input_d
+    bne move_d
     cmp r2, #screen_height-1
-    beq handle_input_end
+    beq move_end
     add r2, r2, #1
-    b handle_input_save_newpos
-handle_input_d:
+    b move_save_newpos
+move_d:
     cmp r1, #ascii_d
-    bne handle_input_a
+    bne move_a
     cmp r3, #screen_width-1
-    beq handle_input_end
+    beq move_end
     add r3, r3, #1
-    b handle_input_save_newpos
-handle_input_a:
+    b move_save_newpos
+move_a:
     cmp r1, #ascii_a
-    bne handle_input_end
+    bne move_end
     cmp r3, #1                  // WHY 1 AND NOT 0 ??? (doesnt work with 0 but why)
-    beq handle_input_end
+    beq move_end
     sub r3, r3, #1
 
-handle_input_save_newpos:
+move_save_newpos:
     // saving new spaceship_pos
     strb r2, [r0]
     strb r3, [r0, #1]
 
-handle_input_end:
+    // Resetting last_input
+    // this can be ommited if wanted behavior is to always have a ship that moves
+    mov r0, #0
+    ldr r1, =last_input
+    strb r0, [r1]
+
+move_end:
     pop {r7}
     mov pc, lr
 

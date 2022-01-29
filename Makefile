@@ -4,7 +4,7 @@ ASLD=arm-none-eabi-ld
 ASLDFLAGS=
 
 S_GLOBAL_FILES_NAME=globals.s
-S_FILES_NAME=main.s time.s view.s lasers.s spaceship.s
+S_FILES_NAME=main.s view.s time.s inputs.s general_inputs.s lasers.s spaceship.s
 
 SRC_GLOBAL_FILES=$(patsubst %.s, src/%.s, $(S_GLOBAL_FILES_NAME))
 SRC_FILES=$(patsubst %.s, src/%.s, $(S_FILES_NAME))

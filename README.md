@@ -9,7 +9,6 @@ In the finished game the player will control a "spacecraft" and will have to avo
 
 ### TODO
 - Add event when the spaceship is hit to game over
-- Add a system to handle inputs globally and let each module treat it -> add a quit system that exits non canonical mode properly when hitting q for instance
 - Improve spaceship control
 - Improve laser's generation (spawn on each sides and even in corners, can be straight and not always diagonal (0 offset can be ok for one component), set random update\_tick\_delta during generation and add a random number to add\_laser\_tick\_delta every time we add a new random laser).
 - Add options to change the "screen" size, lasers generation and the number of ships in the game as well as their starting position and their controls, first at compile time then as arguments
