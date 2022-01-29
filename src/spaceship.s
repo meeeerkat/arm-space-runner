@@ -10,7 +10,6 @@
  * Spaceship management
  */
 
-
 .data
     input_buffer: .skip 1
     .equ spaceship_char, 0x40
