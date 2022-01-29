@@ -128,14 +128,6 @@ add_random_laser:
     // Are we adding a laser this tick ?
     ldr r1, =next_add_laser_tick_nb
     TICK_CHECK_AND_UPDATE_OR_RETURN r0, r1, r2, #add_laser_tick_delta
-    /*
-    ldr r2, [r1]
-    add r2, r2, #add_laser_tick_delta
-    cmp r0, r2
-    movne pc, lr // if not, return
-    // update last_add_laser_tick_nb
-    str r2, [r1]
-    */
 
     // actual laser adding
     push {r4, r5, r6, r7}
