@@ -34,13 +34,7 @@ spaceship_init:
 
 spaceship_tick:
     push {lr}
-
-    // Are we moving the spaceship this tick ?
-    ldr r1, =next_move_spaceship_tick_nb
-    TICK_CHECK_AND_UPDATE_OR_JUMP r0, r1, r2, #move_spaceship_tick_delta, spaceship_tick_jump_pos_update
-
     bl handle_input
-spaceship_tick_jump_pos_update:
     ldr r0, =spaceship_pos
     bl write_spaceship_to_screen
     pop {pc}
@@ -60,6 +54,10 @@ write_spaceship_to_screen:
     
 
 handle_input:
+    // Are we moving the spaceship this tick ?
+    ldr r1, =next_move_spaceship_tick_nb
+    TICK_CHECK_AND_UPDATE_OR_RETURN r0, r1, r2, #move_spaceship_tick_delta
+
     push {r7}
     /* read syscall */
     mov r0, #1              // stdin
