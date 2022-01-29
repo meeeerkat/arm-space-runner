@@ -1,7 +1,5 @@
 
 
-.include "src/globals.s"
-
 .global lasers_init
 .global lasers_tick
 

@@ -1,7 +1,5 @@
 
 
-.include "src/globals.s"
-
 .global spaceship_init
 .global spaceship_tick
 .global spaceship_handle_input

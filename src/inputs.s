@@ -1,7 +1,5 @@
 
 
-.include "src/globals.s"
-
 .global handle_input
 
 

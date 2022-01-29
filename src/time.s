@@ -1,7 +1,5 @@
 
 
-.include "src/globals.s"
-
 .global sleep_till_next_frame
 .global sleep_game_over
 

@@ -1,8 +1,4 @@
 
-.data
-    .equ screen_width, 80
-    .equ screen_height, 25
-
 .macro TICK_CHECK, tick_reg:req, next_tick_addr_reg:req, out_next_tick_reg:req
     // Are we performing this operation this tick ?
     ldr \out_next_tick_reg, [\next_tick_addr_reg]

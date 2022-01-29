@@ -1,7 +1,5 @@
 
 
-.include "src/globals.s"
-
 .global main_quit
 .global main_game_over
 
@@ -17,6 +15,7 @@ _start:
     bl view_init
     bl lasers_init
     bl spaceship_init
+    
 
 // r4 = tick counter
 mov r4, #0

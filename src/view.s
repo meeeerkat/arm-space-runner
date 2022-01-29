@@ -1,7 +1,5 @@
 
 
-.include "src/globals.s"
-
 .global view_init
 .global view_tick
 .global view_game_over
