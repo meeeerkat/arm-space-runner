@@ -1,6 +1,6 @@
 
 
-.include "src/global_constants.s"
+.include "src/globals.s"
 
 .global lasers_init
 .global lasers_tick
@@ -35,9 +35,9 @@
     random_bytes: .skip 4
     random_bytes_len = . - random_bytes
 
-    last_add_laser_tick_nb: .word 0
-    .equ add_laser_tick_delta, 4
-    .equ update_laser_tick_delta, 4
+    next_add_laser_tick_nb: .word 0
+    .equ add_laser_tick_delta, 3
+    .equ update_laser_tick_delta, 3
 
 .text
 
@@ -126,13 +126,16 @@ add_random_laser:
     // r0 = current_tick_nb
     
     // Are we adding a laser this tick ?
-    ldr r1, =last_add_laser_tick_nb
+    ldr r1, =next_add_laser_tick_nb
+    TICK_CHECK_AND_UPDATE_OR_RETURN r0, r1, r2, #add_laser_tick_delta
+    /*
     ldr r2, [r1]
     add r2, r2, #add_laser_tick_delta
     cmp r0, r2
     movne pc, lr // if not, return
     // update last_add_laser_tick_nb
     str r2, [r1]
+    */
 
     // actual laser adding
     push {r4, r5, r6, r7}

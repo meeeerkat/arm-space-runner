@@ -1,6 +1,6 @@
 
 
-.include "src/global_constants.s"
+.include "src/globals.s"
 
 .global sleep_till_next_frame
 
