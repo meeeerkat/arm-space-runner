@@ -3,6 +3,7 @@
 .include "src/globals.s"
 
 .global main_quit
+.global main_game_over
 
 
 /*
@@ -30,12 +31,20 @@ main_while_start:
     mov r0, r4
     bl view_tick
 
+    // Checking game over before calling view_clear_buffer because it clears the buffer
+    mov r0, r4
+    bl spaceship_check_game_over
+
+    bl view_clear_buffer
+
     bl sleep_till_next_frame
-
     add r4, r4, #1
-    cmp r4, #1000
-    blt main_while_start
+    b main_while_start
 
+main_game_over:
+    bl view_game_over
+    bl sleep_game_over
+    
 main_quit:
     bl view_destroy
 

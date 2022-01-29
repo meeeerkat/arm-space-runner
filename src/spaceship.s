@@ -5,6 +5,7 @@
 .global spaceship_init
 .global spaceship_tick
 .global spaceship_handle_input
+.global spaceship_check_game_over
 
 
 /*
@@ -137,3 +138,23 @@ move_end:
     pop {r7}
     mov pc, lr
 
+
+spaceship_check_game_over:
+    push {lr}
+    // r0 = spaceship_pos buffer
+
+    // Loading spaceship_pos
+    ldr r0, =spaceship_pos
+    ldrb r1, [r0]
+    ldrb r2, [r0, #1]
+ 
+    ldr r0, =screen
+    bl get_char_from_buffer
+    // r0 = buffer char
+
+    // if r0 isn't the spaceship, it was overwritten by a laser
+    cmp r0, #spaceship_char
+    popne {lr} // restoring lr in lr to keep a valid stack
+    blne main_game_over // game over
+
+    pop {pc}

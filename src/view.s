@@ -4,12 +4,15 @@
 
 .global view_init
 .global view_tick
+.global view_game_over
 .global view_destroy
+.global view_clear_buffer
 
 .global screen
 .global screen_end
 .global screen_len
 .global write_char_to_buffer
+.global get_char_from_buffer
 
 
 /*
@@ -25,6 +28,9 @@
     reset_graphics_codes_len = . - reset_graphics_codes
     go_home_code: .ascii "\x1b[H"
     go_home_code_len = . - go_home_code
+    
+    game_over_message: .ascii "Game over\n"
+    game_over_message_len = . - game_over_message
 
     screen: .skip screen_width*screen_height
     screen_end:
@@ -157,17 +163,18 @@ view_init:
     NONCANONICAL_MODE_START
     CONFIGURE_NON_BLOCKING_INPUT
     
-    bl clear_screen_buffer
+    bl view_clear_buffer
     pop {pc}
 
 view_tick:
-    push {lr}
     // Updating graphics
     PRINT_BUFFER go_home_code
     PRINT_BUFFER screen
-    // Cleaning buffer
-    bl clear_screen_buffer
-    pop {pc}
+    mov pc, lr
+
+view_game_over:
+    PRINT_BUFFER game_over_message
+    mov pc, lr
 
 view_destroy:
     NONCANONICAL_MODE_END
@@ -187,9 +194,17 @@ write_char_to_buffer:
     strb r1, [r0, r4]
     pop {r4}
     mov pc, lr
-    
 
-clear_screen_buffer:
+get_char_from_buffer:
+    // r0 = buffer, r1 = posy, r2 = posx
+    // returns r0 = char, r1 & r2 not modified
+    mov r3, #screen_width
+    mul r3, r1, r3
+    add r3, r3, r2
+    ldrb r0, [r0, r3]
+    mov pc, lr
+
+view_clear_buffer:
     // Takes no arguments
     ldr r0, =screen
     ldr r1, =screen_end
