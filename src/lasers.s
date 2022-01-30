@@ -146,12 +146,7 @@ add_random_laser:
     mov r0, #0x41
     strb r0, [r4], #1
 
-    // Starting position calculation:
-    // We need 2 random bits (4 combinations) to determine the side on which the lasers will spawn
-    // We need 5 or 7 random bits (32 or 128 combinations) for the other component (the first 2 random bits
-    // determine a component to be 0)
-    // We then need to set the velocity (for now it'll be calculated based on starting position)
-    // RIGHT NOW THE laserS WILL ONLY SPAWN FROM THE TOP OR BOTTOM (to simplify)
+    // RIGHT NOW THE lasers WILL ONLY SPAWN FROM THE TOP OR BOTTOM (to simplify)
 
     mov r0, #1
     bl get_random_bits
