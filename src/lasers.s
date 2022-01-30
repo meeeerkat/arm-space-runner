@@ -176,7 +176,7 @@ add_random_laser:
 
 set_random_laser_horizontal:
     // here first r0 bit = 0
-    TST r0, #0b01       // second r0 bit = 
+    TST r0, #0b10       // second r0 bit = 
     SET_START_POS_AND_OFFSET screen_width, screen_height, 1, 0
 
 random_laser_set_char:

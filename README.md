@@ -8,7 +8,6 @@ In the finished game the player will control a "spacecraft" and will have to avo
 
 
 ### TODO
-- Fix bug where horizontal lasers only spawn to the right
 - Print a proper Game over screen
 - Improve spaceship control
 - Improve lasers graphics : add some color
