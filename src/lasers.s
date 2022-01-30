@@ -32,7 +32,7 @@
     next_laser_addr: .word lasers   // Rotating addr
 
     next_add_laser_tick_nb: .word 0
-    .equ add_laser_tick_delta, 100
+    .equ add_laser_tick_delta, 5
     .equ update_laser_tick_delta_min, 3
     .equ update_laser_tick_delta_max, 8
 
@@ -118,6 +118,28 @@ update_next_laser:
 
 
 
+// Used only in add_random_laser
+// to factor set_random_laser_vertical and set_random_laser_horizontal
+.macro SET_START_POS_AND_OFFSET, max_first_comp_pos:req, max_second_comp_pos:req, first_comp_addr_offset:req, second_comp_addr_offset:req
+    moveq r0, #0
+    moveq r1, #1
+    movne r0, #\max_first_comp_pos-1
+    ldrne r1, =-1
+    strb r0, [r4, #\first_comp_addr_offset]
+    strb r1, [r4, #\first_comp_addr_offset+2]
+
+    // setting random second_comp_pos & second_comp_offset
+    mov r0, #\max_second_comp_pos
+    bl get_random_number
+    // 0 <= r0 < max_second_comp_pos & random
+    strb r0, [r4, #\second_comp_addr_offset]
+    mov r0, #3
+    bl get_random_number
+    cmp r0, #2      // r0 = {0,1} -> offset = r0
+    ldreq r0, =-1   // r0 = 2 -> offset = -1
+    strb r0, [r4, #\second_comp_addr_offset+2]
+.endm
+
 add_random_laser:
     // r0 = current_tick_nb
     
@@ -146,29 +168,23 @@ add_random_laser:
     mov r0, #0x41
     strb r0, [r4], #1
 
-    // RIGHT NOW THE lasers WILL ONLY SPAWN FROM THE TOP OR BOTTOM (to simplify)
-
-    mov r0, #1
+    mov r0, #2
     bl get_random_bits
-    TST r0, #0b1        // determining startpos.y with one bit
-    // r5 = startpos.y, r6 = velocity.y
-    moveq r0, #0
-    moveq r1, #1
-    movne r0, #screen_height-1
-    ldrne r1, =-1
-    strb r0, [r4], #2
-    strb r1, [r4], #-1
+    TST r0, #0b1        // first r0 bit = 1 => vertical, else horizontal
+    bne set_random_laser_horizontal
 
-    mov r0, #screen_width
-    bl get_random_number
-    // 0 <= r0 < screen_width & random
-    strb r0, [r4], #2
-    mov r0, #3
-    bl get_random_number
-    cmp r0, #2      // r0 = {0,1} -> offset = r0
-    ldreq r0, =-1   // r0 = 2 -> offset = -1
-    strb r0, [r4], #1
-    
+    // here first r0 bit = 1
+    TST r0, #0b11   // determining startpos.y with r0's second bit
+    SET_START_POS_AND_OFFSET screen_height, screen_width, 0, 1
+    b random_laser_set
+
+set_random_laser_horizontal:
+    // here first r0 bit = 0
+    TST r0, #0b01       // second r0 bit = 
+    SET_START_POS_AND_OFFSET screen_width, screen_height, 1, 0
+
+random_laser_set:
+    add r4, r4, #4 // SET_START_POS_AND_OFFSET doesn't modify r4 so it's done here
     ldr r0, =lasers_end
     cmp r4, r0              // if next_laser_addr is at the end of the lasers array
     ldrge r4, =lasers       // move it back to the beginning (r4 = r4+1 because we post index it)
