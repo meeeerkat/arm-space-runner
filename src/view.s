@@ -30,7 +30,7 @@
     game_over_message: .ascii "Game over\n"
     game_over_message_len = . - game_over_message
 
-    screen: .skip screen_width*screen_height
+    screen: .skip actual_screen_width*screen_height
     screen_end:
     screen_len = . - screen
 
@@ -44,7 +44,7 @@
 
     winsize_struct:
         .short screen_height
-        .short screen_width
+        .short actual_screen_width
         .short 0     // unused
         .short 0     // unused
 
@@ -186,9 +186,10 @@ write_char_to_buffer:
     // r0 = buffer, r1 = char, r2 = posy, r3 = posx
     // DOES NOT MODIFY ITS PARAMETERS
     push {r4}
-    mov r4, #screen_width
+    mov r4, #actual_screen_width
     mul r4, r2, r4
     add r4, r4, r3
+    add r4, r4, #1      // Needed due to \n but causes a bug at the very first pos (0,0)
     strb r1, [r0, r4]
     pop {r4}
     mov pc, lr
@@ -196,9 +197,10 @@ write_char_to_buffer:
 get_char_from_buffer:
     // r0 = buffer, r1 = posy, r2 = posx
     // returns r0 = char, r1 & r2 not modified
-    mov r3, #screen_width
+    mov r3, #actual_screen_width
     mul r3, r1, r3
     add r3, r3, r2
+    add r3, r3, #1      // Needed due to \n but causes a bug at the very first pos (0,0)
     ldrb r0, [r0, r3]
     mov pc, lr
 
@@ -211,10 +213,10 @@ view_clear_buffer:
         strb r2, [r0], #1
         CMP r0, r1
         BNE clear_buffer_set_spaces_while_start
-    mov r2, #0xa // adding EOL every #screen_width# chars
-    ldr r0, =screen+screen_width
+    mov r2, #0xa // adding EOL every #actual_screen_width# chars
+    ldr r0, =screen+actual_screen_width
     clear_buffer_add_end_of_line_while_start:
-        strb r2, [r0], #screen_width
+        strb r2, [r0], #actual_screen_width
         cmp r0, r1
         blt clear_buffer_add_end_of_line_while_start
     mov pc, lr

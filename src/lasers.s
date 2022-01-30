@@ -32,7 +32,7 @@
     next_laser_addr: .word lasers   // Rotating addr
 
     next_add_laser_tick_nb: .word 0
-    .equ add_laser_tick_delta, 3
+    .equ add_laser_tick_delta, 100
     .equ update_laser_tick_delta_min, 3
     .equ update_laser_tick_delta_max, 8
 
@@ -79,7 +79,7 @@ update_one_laser:
 
     cmp r3, #screen_width   // verifying value
     bge update_next_laser
-    cmp r3, #1              // WHY 1 AND NOT 0 ??? This inconsistency is also found in spaceship.s
+    cmp r3, #0
     blt update_next_laser
 
     // r0,r1,r2 and r3 are all already properly positionned
@@ -165,8 +165,7 @@ add_random_laser:
     strb r1, [r4], #-1
 
     mov r0, #screen_width
-    mov r1, #0
-    bl get_random_number_between
+    bl get_random_number
     // 0 <= r0 < screen_width & random
     strb r0, [r4], #2
     mov r0, #3

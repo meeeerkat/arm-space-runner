@@ -117,7 +117,7 @@ move_d:
 move_a:
     cmp r1, #ascii_a
     bne move_end
-    cmp r3, #1                  // WHY 1 AND NOT 0 ??? (doesnt work with 0 but why)
+    cmp r3, #0
     beq move_end
     sub r3, r3, #1
 
