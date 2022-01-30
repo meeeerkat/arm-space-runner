@@ -1,6 +1,7 @@
 
 
 .global get_random_number
+.global get_random_number_between
 
 /*
  *  Random generator helper
@@ -71,7 +72,7 @@ get_bits_jump_refill:
 /*
  *  Returns a random number that is: 0 <= return < param
  *  assumes param > 0
- *  param & return are in r0
+ *  param & return are r0
  */
 get_random_number:
     push {r4, r5, lr}
@@ -94,4 +95,18 @@ get_random_number_while_start:
     pop {r4, r5, pc}
 
 
+/*
+ *  Returns a random number that is: param0 <= return < param1
+ *  assumes params > 0
+ *  param0 is r0, param1 is r1
+ *  return is r0
+ */
+get_random_number_between:
+    push {r4, lr}
 
+    mov r4, r0      // r4 = param0
+    sub r0, r1, r0  // base is now zero, r0 = max
+    bl get_random_number
+    add r0, r0, r4  // we add param0 to offset this number
+
+    pop {r4, pc}
