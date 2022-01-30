@@ -12,11 +12,11 @@
     /* laser {
      * .word next_update_tick_nb,
      * .byte update_tick_delta,
-     * .byte char,
      * .byte posy,
      * .byte posx,
      * .byte offsety,
-     * .byte offsetx
+     * .byte offsetx,
+     * .byte char
      * };
      *
      * sizeof(laser) = 4+1+1+4*1 = 10 bytes
@@ -32,9 +32,9 @@
     next_laser_addr: .word lasers   // Rotating addr
 
     next_add_laser_tick_nb: .word 0
-    .equ add_laser_tick_delta, 5
-    .equ update_laser_tick_delta_min, 3
-    .equ update_laser_tick_delta_max, 8
+    .equ add_laser_tick_delta, 20
+    .equ update_laser_tick_delta_min, 20
+    .equ update_laser_tick_delta_max, 22
 
 .text
 
@@ -66,9 +66,9 @@ update_lasers:
     ldr r5, =next_laser_addr
 update_one_laser:
     // Here we load all components of a laser
-    ldrb r1, [r4, #5]   // loading char
-    ldrb r2, [r4, #6]   // loading posy
-    ldrb r3, [r4, #7]   // loading posx
+    ldrb r1, [r4, #9]   // loading char
+    ldrb r2, [r4, #5]   // loading posy
+    ldrb r3, [r4, #6]   // loading posx
     
     // Checking if it's not out of view
     // if it is, it's not displayed nor updated
@@ -101,13 +101,13 @@ update_one_laser:
     str r1, [r4]        // updating next_update_tick_nb
 
     // Updating pos
-    ldrb r1, [r4, #8]   // loading offsety
+    ldrsb r1, [r4, #7]   // loading offsety
     add r2, r2, r1      // calculating new posy
-    strb r2, [r4, #6]   // storing new posy
+    strb r2, [r4, #5]   // storing new posy
 
-    ldrb r1, [r4, #9]   // loading offsetx
+    ldrsb r1, [r4, #8]   // loading offsetx
     add r3, r3, r1      // calculating new posx
-    strb r3, [r4, #7]   // storing new posx
+    strb r3, [r4, #6]   // storing new posx
 
 update_next_laser:
     add r4, r4, #10
@@ -164,10 +164,6 @@ add_random_laser:
     bl get_random_number_between
     strb r0, [r4], #1 // saving it
 
-    // storing char
-    mov r0, #0x41
-    strb r0, [r4], #1
-
     mov r0, #2
     bl get_random_bits
     TST r0, #0b1        // first r0 bit = 1 => vertical, else horizontal
@@ -176,15 +172,22 @@ add_random_laser:
     // here first r0 bit = 1
     TST r0, #0b11   // determining startpos.y with r0's second bit
     SET_START_POS_AND_OFFSET screen_height, screen_width, 0, 1
-    b random_laser_set
+    b random_laser_set_char
 
 set_random_laser_horizontal:
     // here first r0 bit = 0
     TST r0, #0b01       // second r0 bit = 
     SET_START_POS_AND_OFFSET screen_width, screen_height, 1, 0
 
-random_laser_set:
-    add r4, r4, #4 // SET_START_POS_AND_OFFSET doesn't modify r4 so it's done here
+random_laser_set_char:
+    // SET_START_POS_AND_OFFSET doesn't modify r4 so it's done here
+    add r4, r4, #2      // jumping pos
+    ldrsb r0, [r4], #1   // loading offsets
+    ldrsb r1, [r4], #1
+    // This could be called at every update_laser but storing it at creation is more efficient
+    bl calculate_char_from_offset
+    strb r0, [r4], #1   // storing char
+
     ldr r0, =lasers_end
     cmp r4, r0              // if next_laser_addr is at the end of the lasers array
     ldrge r4, =lasers       // move it back to the beginning (r4 = r4+1 because we post index it)
@@ -194,3 +197,26 @@ random_laser_set:
 
     pop {r4, pc}
 
+
+// Takes r0 = offsety, r1 = offsetx as argument
+// Returns r0 = char
+calculate_char_from_offset:
+    cmp r1, #0
+    bgt calculate_char_from_offset_going_right
+    blt calculate_char_from_offset_going_left
+    // if offsetx == 0 we return '|' immediatly
+    mov r0, #0x7c   // = '|', going down
+    mov pc, lr
+
+calculate_char_from_offset_going_right:
+    cmp r0, #0
+    movgt r0, #0x5c // = '\', going right-down
+    movlt r0, #0x2f // = '/', going right-up
+    moveq r0, #0x2d // = '-', going right
+    mov pc, lr
+calculate_char_from_offset_going_left:
+    cmp r0, #0
+    movgt r0, #0x2f // = '/', going left-down
+    movlt r0, #0x5c // = '\', going left-up
+    moveq r0, #0x2d // = '-', going left
+    mov pc, lr
