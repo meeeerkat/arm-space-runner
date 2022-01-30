@@ -30,12 +30,11 @@
     lasers_end:
     lasers_len = . - lasers
     next_laser_addr: .word lasers   // Rotating addr
-    random_bytes: .skip 4
-    random_bytes_len = . - random_bytes
 
     next_add_laser_tick_nb: .word 0
     .equ add_laser_tick_delta, 3
-    .equ update_laser_tick_delta, 3
+    .equ update_laser_tick_delta_min, 3
+    .equ update_laser_tick_delta_max, 8
 
 .text
 
@@ -80,7 +79,7 @@ update_one_laser:
 
     cmp r3, #screen_width   // verifying value
     bge update_next_laser
-    cmp r3, #0
+    cmp r3, #1              // WHY 1 AND NOT 0 ??? This inconsistency is also found in spaceship.s
     blt update_next_laser
 
     // r0,r1,r2 and r3 are all already properly positionned
@@ -123,23 +122,29 @@ add_random_laser:
     // r0 = current_tick_nb
     
     // Are we adding a laser this tick ?
+    // Doesn't modify r0
     ldr r1, =next_add_laser_tick_nb
     TICK_CHECK_AND_UPDATE_OR_RETURN r0, r1, r2, #add_laser_tick_delta
 
-    // actual laser adding
-    push {r4, r5, r6, r7}
+    // Actual laser adding
+    push {r4, lr}
 
-    ldr r3, =next_laser_addr
-    ldr r3, [r3]
+    // Loading next_laser in r4 because it's not modified by get_random functions
+    ldr r4, =next_laser_addr
+    ldr r4, [r4]
 
     // storing tick related data
-    str r0, [r3], #4 // current tick is the base one
-    mov r0, #update_laser_tick_delta
-    strb r0, [r3], #1 // TODO: set random tick base
+    str r0, [r4], #4 // current tick is the base one
+
+    // getting random update_tick_delta: min <= update_tick_delta < max
+    mov r0, #update_laser_tick_delta_min
+    mov r1, #update_laser_tick_delta_max
+    bl get_random_number_between
+    strb r0, [r4], #1 // saving it
 
     // storing char
-    mov r5, #0x41
-    strb r5, [r3], #1
+    mov r0, #0x41
+    strb r0, [r4], #1
 
     // Starting position calculation:
     // We need 2 random bits (4 combinations) to determine the side on which the lasers will spawn
@@ -148,42 +153,34 @@ add_random_laser:
     // We then need to set the velocity (for now it'll be calculated based on starting position)
     // RIGHT NOW THE laserS WILL ONLY SPAWN FROM THE TOP OR BOTTOM (to simplify)
 
-    /* getrandom syscall */
-    ldr r0, =random_bytes
-    ldr r1, =random_bytes_len
-    mov r2, #0
-    mov r7, #0x180     // syscall ID
-    swi #0
-    // r0 IS OVERWRITTEN BY size_t RETURN PARAMETER
-    // TODO: handle case where we didn't received enough random bytes
-    ldr r0, =random_bytes
-    
-    ldrb r5, [r0], #1   // loading first random byte in r5
-    TST r5, #0b1        // determining startpos.y with the first bit
+    mov r0, #1
+    bl get_random_bits
+    TST r0, #0b1        // determining startpos.y with one bit
     // r5 = startpos.y, r6 = velocity.y
-    moveq r5, #0
-    moveq r6, #1
-    movne r5, #24
-    ldrne r6, =-1
-    strb r5, [r3], #2
-    strb r6, [r3], #-1
+    moveq r0, #0
+    moveq r1, #1
+    movne r0, #screen_height-1
+    ldrne r1, =-1
+    strb r0, [r4], #2
+    strb r1, [r4], #-1
 
-    ldrb r5, [r0], #2       // loading the next random byte
-    mov r5, r5, LSR #2      // only using 6 bits so we only have 2^6=64 combinations
-    add r5, r5, #(screen_width-64)/2  // centering startpos.x
-    strb r5, [r3], #2
-    TST r5, #0b1000000      // using the seventh random bit to determine velocity.x
-    moveq r5, #1
-    ldrne r5, =-1
-    strb r5, [r3], #1
+    mov r0, #screen_width
+    mov r1, #0
+    bl get_random_number_between
+    // 0 <= r0 < screen_width & random
+    strb r0, [r4], #2
+    mov r0, #3
+    bl get_random_number
+    cmp r0, #2      // r0 = {0,1} -> offset = r0
+    ldreq r0, =-1   // r0 = 2 -> offset = -1
+    strb r0, [r4], #1
     
-    ldr r4, =lasers_end
-    cmp r3, r4              // if next_laser_addr is at the end of the lasers array
-    ldrge r3, =lasers       // move it back to the beginning (r3 = r4+1 because we post index it)
+    ldr r0, =lasers_end
+    cmp r4, r0              // if next_laser_addr is at the end of the lasers array
+    ldrge r4, =lasers       // move it back to the beginning (r4 = r4+1 because we post index it)
     // Storing new next address
-    ldr r4, =next_laser_addr
-    str r3, [r4]
+    ldr r0, =next_laser_addr
+    str r4, [r0]
 
-    pop {r4, r5, r6, r7}
-    mov pc, lr
+    pop {r4, pc}
 

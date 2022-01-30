@@ -207,7 +207,7 @@ view_clear_buffer:
     ldr r0, =screen
     ldr r1, =screen_end
     mov r2, #0x20 // space
-    clear_buffer_set_spaces_while_start:
+    clear_buffer_set_spaces_while_start: // TODO: write word by word to be faster
         strb r2, [r0], #1
         CMP r0, r1
         BNE clear_buffer_set_spaces_while_start

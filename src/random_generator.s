@@ -1,5 +1,6 @@
 
 
+.global get_random_bits
 .global get_random_number
 .global get_random_number_between
 
@@ -29,11 +30,10 @@
 
 
 /*
- *  Private helper for the module
- *  Gets r0 random bits in r0 and refills the random_buffer
+ *  Gets r0 > 0 random bits in r0 and refills the random_buffer
  *  with a call to getrandom if needed and resetting attributes
  */
-get_bits:
+get_random_bits:
     push {r4, r7}
 
     mov r3, r0 // r3 = random bits nb to get
@@ -43,7 +43,7 @@ get_bits:
     ldr r1, =random_buffer_end
     add r2, r0, r3
     cmp r2, r1
-    blt get_bits_jump_refill
+    blt get_random_bits_jump_refill
     
     // Refilling random_buffer & resetting attributes
 
@@ -58,7 +58,7 @@ get_bits:
     // need to re set it
     ldr r0, =random_buffer
 
-get_bits_jump_refill:
+get_random_bits_jump_refill:
     // in any case, r0 is the current random_buffer
     // and r4 is random_buffer_current (pointing to current random_buffer = r0)
     ldr r1, [r0], r3    // loading result
@@ -85,9 +85,9 @@ get_random_number:
     
     // We hence need to take r4 bits from buffer to generate the number
 get_random_number_while_start:
-    mov r0, r4  // set param every time because r0 is overriden by get_bits
-    bl get_bits    // r0 is already properly positionned
-    cmp r0, r5  // while the number we got is higher than the param
+    mov r0, r4          // set param every time because r0 is overriden by get_bits
+    bl get_random_bits  // r0 is already properly positionned
+    cmp r0, r5          // while the number we got is higher than the param
     bge get_random_number_while_start   // we get another one
 
     // r0 is already the right return value

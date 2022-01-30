@@ -30,6 +30,10 @@ print_r0_as_digit:
 
 
 _start:
+    mov r0, #2
+    bl get_random_bits
+    bl print_r0_as_digit 
+
     mov r0, #10
     bl get_random_number
     bl print_r0_as_digit 

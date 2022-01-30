@@ -10,7 +10,7 @@ In the finished game the player will control a "spacecraft" and will have to avo
 ### TODO
 - Print a proper Game over screen
 - Improve spaceship control
-- Improve laser's generation (spawn on each sides and even in corners, can be straight and not always diagonal (0 offset can be ok for one component), set random update\_tick\_delta during generation and add a random number to add\_laser\_tick\_delta every time we add a new random laser).
+- Improve lasers graphics : calculate character from offset (/,\ and | are great options) + add some color
 - Add options to change the "screen" size, lasers generation and the number of ships in the game as well as their starting position and their controls, first at compile time then as arguments
 - Option to add multiple spaceships with different or the same controls (so the same movements) + add configurable rule on weather one loses when all spaceships are hit or just one + option to change spaceships' character display to multi character shapes defined by the user
 - Improve the screen printing by using 2 buffers: one that is modified by the user (me) and one that represents the currently printed screen. Updating the screen would only need to apply the differences between the two and would be much more efficient (ncurses like).
