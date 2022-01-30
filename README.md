@@ -17,7 +17,7 @@ To compile & execute the program, one needs:
 - a way to emulate an ARM CPU (if one isn't already on an ARM architecture), the Makefile uses 'qemu-arm' from the 'qemu' archlinux package
 
 ### How to play
-- Avoid the lasers and survive as long a possible in your tiny spaceship (@).
+- Avoid the lasers and survive as long as possible in your tiny spaceship (@).
 - If you want to quit, press q (Ctrl+C doesn't leave non-canonical mode yet, your terminal will be weird if you don't quit properly).
 
 ### Settings
@@ -33,4 +33,4 @@ As explained in the "Current state" section, the settings are hardcoded in the s
 - Add options to change the "screen" size, lasers generation and the number of ships in the game as well as their starting position and their controls, first at compile time then as arguments
 - Option to add multiple spaceships with different or the same controls (so the same movements) + add configurable rule on weather one loses when all spaceships are hit or just one + option to change spaceships' character display to multi character shapes defined by the user
 - Improve the screen printing by using 2 buffers: one that is modified by the user (me) and one that represents the currently printed screen. Updating the screen would only need to apply the differences between the two and would be much more efficient (ncurses like). This could still be done in 1 write syscall with a pattern such as "code\_to\_move\_cursor-update-code\_to\_move\_cursor-update-...).
-- Fix bug that causes (0, 0) to be a position where the spaceship disapears (and the player automatically loses). This is caused by view's write\_char\_to\_buffer and get\_char\_from\_buffer who add 1 to the final position compensate for the home ("\x1b[H") character that seems to take some place. This bug might be automatically fixed when the screen update is improved (see above).
+- Fix bug that causes (0, 0) to be a position where the spaceship disapears (and the player automatically loses). This is caused by view's write\_char\_to\_buffer and get\_char\_from\_buffer who add 1 to the final position compensate for the home ("\x1b[H") character that seems to take some place. This bug might be automatically fixed when the screen update is improved (see just above).
