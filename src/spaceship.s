@@ -11,10 +11,11 @@
  */
 
 .data
-    .equ ascii_a, 0x61
-    .equ ascii_d, 0x64
-    .equ ascii_s, 0x73
-    .equ ascii_w, 0x77
+    .equ ascii_left_key, 0x61   // a
+    .equ ascii_right_key, 0x64  // d
+    .equ ascii_right_keyown_key, 0x73   // s
+    .equ ascii_up_key, 0x77     // w
+
     last_input: .byte 0
 
     .equ spaceship_char, 0x40
@@ -55,13 +56,13 @@ write_spaceship_to_screen:
 spaceship_handle_input:
     // r0 = character
     // out: r0 = (consumed) ? 0 : r0
-    cmp r0, #ascii_w
+    cmp r0, #ascii_up_key
     beq 1f
-    cmp r0, #ascii_s
+    cmp r0, #ascii_right_keyown_key
     beq 1f
-    cmp r0, #ascii_d
+    cmp r0, #ascii_right_key
     beq 1f
-    cmp r0, #ascii_a
+    cmp r0, #ascii_left_key
     beq 1f
     mov pc, lr // input key isn't used for spaceship control
 1:
@@ -94,28 +95,28 @@ move:
     // r2 = spaceship_pos.y, r3 = spaceship_pos.x
  
     // Updating r2, r3
-    cmp r1, #ascii_w
+    cmp r1, #ascii_up_key
     bne move_s
     cmp r2, #0
     beq move_end
     sub r2, r2, #1
     b move_save_newpos
 move_s:
-    cmp r1, #ascii_s
+    cmp r1, #ascii_right_keyown_key
     bne move_d
     cmp r2, #screen_height-1
     beq move_end
     add r2, r2, #1
     b move_save_newpos
 move_d:
-    cmp r1, #ascii_d
+    cmp r1, #ascii_right_key
     bne move_a
     cmp r3, #screen_width-1
     beq move_end
     add r3, r3, #1
     b move_save_newpos
 move_a:
-    cmp r1, #ascii_a
+    cmp r1, #ascii_left_key
     bne move_end
     cmp r3, #0
     beq move_end
