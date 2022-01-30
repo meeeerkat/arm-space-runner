@@ -1,11 +1,28 @@
 
 ## A terminal based mini game made in ARM assembly
 ### Current state
-Right now, one can move around in the spaceship using wasd and look at (yet inoffensive) lasers wondering around.
+Right now, the game is functionnal but one has to set all the options in the source files directly (in the .data section).
+Each commit may have different settings (average lasers' speed, spaceship speed, view size, ...) so the difficulty is pretty random depending on when you pulled the code.
 
-### Goal
-In the finished game the player will control a "spacecraft" and will have to avoid being hit by a laser.
+### Dependencies needed
+The game only relies on syscalls (it uses getrandom, Kernel version >= 3.17 required).  
+To compile & execute the program, one needs:
+- a cross compiler for ARM (or a compiler if one is on an ARM architecture), the Makefile uses 'arm-none-eabi-as' & 'arm-none-eabi-ld' from the 'arm-none-eabi' archlinux package
+- a way to emulate an ARM CPU (if one isn't already on an ARM architecture), the Makefile uses 'qemu-arm' from the 'qemu' archlinux package
 
+### Running the game
+Assuming all Makefile dependencies are fulfilled
+- 'make' or 'make compile' compiles the program (if not compiled already)
+- 'make run' compiles the program (if not compiled already) and runs it
+
+### How to play
+- Avoid the lasers and survive as long a possible in your tiny spaceship (@).
+
+### Settings
+As explained in the "Current state" section, the settings are hardcoded in the source files (in the .data section). Here we explain how some can be changed:
+- Right now the only controls supported but default are "wasd" but they can be changed by mapping the right keycode in the src/spaceship.s's .data section.
+- The spaceship's & lasers' speed is determined by the number of ticks between position updates, this can be changed in the src/spaceship.s's and src/lasers.s's .data section (a smalled number of tick between updates -> a higher speed) (attributes to change are update\_laser\_tick\_delta\_{min, max} and move\_spaceship\_tick\_delta).
+- The frequency at which new lasers are added can be modified in the src/lasers.s's .data section (attribute to change is add\_laser\_tick\_delta).
 
 ### TODO
 - Print a proper Game over screen
