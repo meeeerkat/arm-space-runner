@@ -26,15 +26,15 @@
      *      0, 8, 0x43, 0, 1, 30, 1
      */
     .align 4
-    lasers: .skip 1000
+    lasers: .skip 10*1000
     lasers_end:
     lasers_len = . - lasers
     next_laser_addr: .word lasers   // Rotating addr
 
     next_add_laser_tick_nb: .word 0
-    .equ add_laser_tick_delta, 20
-    .equ update_laser_tick_delta_min, 20
-    .equ update_laser_tick_delta_max, 22
+    .equ add_laser_tick_delta, 5
+    .equ update_laser_tick_delta_min, 10
+    .equ update_laser_tick_delta_max, 12
 
 .text
 

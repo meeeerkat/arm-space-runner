@@ -1,5 +1,8 @@
 
 ## A terminal based mini game made in ARM assembly
+
+![record](record.gif)
+
 ### Current state
 Right now, the game is functionnal but one has to set all the options in the source files directly (in the .data section).
 Each commit may have different settings (average lasers' speed, spaceship speed, view size, ...) so the difficulty is pretty random depending on when you pulled the code.
